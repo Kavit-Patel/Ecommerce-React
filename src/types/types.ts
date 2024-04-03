@@ -7,7 +7,10 @@ export interface productType {
 }
 export interface dataType {
   products: productType[];
-  status: "idle" | "loading" | "success" | "error";
+  product: productType | null;
+  productsStatus: "idle" | "loading" | "success" | "error";
+  productStatus: "idle" | "loading" | "success" | "error";
+  productsPriceRange: number[];
 }
 export interface Cart extends productType {
   quantity?: number;

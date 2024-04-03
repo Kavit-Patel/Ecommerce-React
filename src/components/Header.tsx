@@ -1,4 +1,7 @@
+import { Link, useNavigate } from "react-router-dom";
+
 export const Header = () => {
+  const navigate = useNavigate();
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px]">
@@ -14,12 +17,18 @@ export const Header = () => {
               className="bg-[#dfdfdf] md:w-[333px] h-[56px] pl-10 rounded-sm"
               type="text"
               placeholder="Search"
+              onChange={(e) => {
+                const search = e.target.value;
+                // if (search.length !== 0) {
+                navigate("/products", { state: { search } });
+                // }
+              }}
             />
           </p>
           <ul className="hidden lg:flex lg:gap-10 text-[#989898]">
-            <a href="/" className="">
+            <Link to="/" className="">
               Home
-            </a>
+            </Link>
             <li className="">Abount</li>
             <li className="">Contact Us</li>
             <li className="">Blog</li>
@@ -28,7 +37,7 @@ export const Header = () => {
             <img src="../../images/Favorites.png" alt="Favorites" />
             <span className="relative myCart cursor-pointer">
               <img src="../../images/Cart.png" alt="Cart" />
-              <span className="navCart absolute -top-3 -right-1.5 text-green-700 font-semibold">
+              <span className="navCart absolute -top-3 -right-1.5 text-black-950 font-semibold">
                 0
               </span>
             </span>
@@ -39,8 +48,8 @@ export const Header = () => {
           </p>
         </div>
         <div className="hidden w-full px-8 h-[48px] bg-[#2e2e2e] lg:flex justify-between">
-          <a
-            href="/src/pages/products.html"
+          <Link
+            to="/src/pages/products.html"
             className="flex items-center text-gray-400 gap-2"
           >
             <img
@@ -49,48 +58,48 @@ export const Header = () => {
               alt="Phone"
             />
             <span>Phone</span>
-          </a>
-          <a href="#" className="flex items-center text-gray-400 gap-2">
+          </Link>
+          <Link to="#" className="flex items-center text-gray-400 gap-2">
             <img
               className="text-black"
               src="../../images/Vector-31.png"
               alt="Computers"
             />
             <span>Computers</span>
-          </a>
-          <a href="#" className="flex items-center text-gray-400 gap-2">
+          </Link>
+          <Link to="#" className="flex items-center text-gray-400 gap-2">
             <img
               className="text-black"
               src="../../images/Vector-14.png"
               alt="Smart Watches"
             />
             <span>Smart Watches</span>
-          </a>
-          <a href="#" className="flex items-center text-gray-400 gap-2">
+          </Link>
+          <Link to="#" className="flex items-center text-gray-400 gap-2">
             <img
               className="text-black"
               src="../../images/Vector-3.png"
               alt="Cameras"
             />
             <span>Cameras</span>
-          </a>
-          <a href="#" className="flex items-center text-gray-400 gap-2">
+          </Link>
+          <Link to="#" className="flex items-center text-gray-400 gap-2">
             <img
               className="text-black"
               src="../../images/Vector-10.png"
               alt="Headphones"
             />
             <span>Headphones</span>
-          </a>
+          </Link>
 
-          <a href="#" className="flex items-center text-gray-400 gap-2">
+          <Link to="#" className="flex items-center text-gray-400 gap-2">
             <img
               className="text-black"
               src="../../images/Vector-14.png"
               alt="Gaming"
             />
             <span>Gaming</span>
-          </a>
+          </Link>
         </div>
       </div>
     </div>

@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 const Footer = () => {
   return (
     <div className="w-full  bg-[#DFDFDF] flex justify-center">
@@ -23,9 +25,12 @@ const Footer = () => {
             <p className="text-xs text-center lg:mt-2">
               Commodo fames vitae vitae leo mauris in Eu consequat.
             </p>
-            <button className="mt-10 border border-gray-300 text-gray-200 px-8 py-1 rounded-sm w-fit transition-all hover:scale-105 active:scale-100">
+            <Link
+              to="/products"
+              className="mt-10 border border-gray-300 text-gray-200 px-8 py-1 rounded-sm w-fit transition-all hover:scale-105 active:scale-100"
+            >
               Shop Now
-            </button>
+            </Link>
           </div>
           <div className="relative flex-1 flex flex-col items-center">
             <img

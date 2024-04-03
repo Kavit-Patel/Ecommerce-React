@@ -27,7 +27,7 @@ const Home = () => {
               Created to change everything for the better. For everything
             </p>
             <Link
-              to="/src/pages/products.html"
+              to="/products"
               className="button border border-gray-400 text-gray-400 px-8 py-1 rounded-sm w-fit transition-all hover:scale-105 active:scale-100"
             >
               Shop Now
@@ -103,7 +103,7 @@ const Home = () => {
                 with a spacious Liquid Retina display
               </p>
               <Link
-                to="/src/pages/products.html"
+                to="/products"
                 className="button mr-auto border border-black px-5 py-1.5 md:px-10 md:py-3 rounded-sm transition-all hover:scale-105 active:scale-100"
               >
                 Buy Now
@@ -128,8 +128,8 @@ const Home = () => {
             id="categorySection"
             className="w-full md:h-[128px] flex flex-col md:flex-row gap-3 justify-center items-center"
           >
-            {data.status === "loading" && <Loader />}
-            {data.status === "success" &&
+            {data.productsStatus === "loading" && <Loader />}
+            {data.productsStatus === "success" &&
               data.products.map(
                 (product) =>
                   product.section === "category" && (
@@ -161,8 +161,8 @@ const Home = () => {
             id="featuredSection"
             className="flex justify-center md:justify-between flex-wrap gap-2"
           >
-            {data.status === "loading" && <Loader />}
-            {data.status === "success" &&
+            {data.productsStatus === "loading" && <Loader />}
+            {data.productsStatus === "success" &&
               data.products.map(
                 (product) =>
                   product.section === "newArrival" && (
@@ -176,7 +176,7 @@ const Home = () => {
                       </h2>
                       <p className="font-bold text-lg">{product.price}</p>
                       <Link
-                        to=""
+                        to={`/product/${product._id}`}
                         className="flex justify-center items-center bg-black h-12 px-10 text-white rounded-md transition-all hover:scale-105 active:scale-100"
                       >
                         Buy Now
@@ -194,8 +194,8 @@ const Home = () => {
         <div className="px-20 flex flex-col gap-12">
           <h2 className="text-xl font-semibold">Discounted up to - 50%</h2>
           <div id="discountedSection" className="flex flex-wrap gap-2">
-            {data.status === "loading" && <Loader />}
-            {data.status === "success" &&
+            {data.productsStatus === "loading" && <Loader />}
+            {data.productsStatus === "success" &&
               data.products.map(
                 (product) =>
                   product.section === "discounted" && (
@@ -209,7 +209,7 @@ const Home = () => {
                       </h2>
                       <p className="font-bold text-lg">{product.price}</p>
                       <Link
-                        to=""
+                        to={`/product/${product._id}`}
                         className="flex justify-center items-center bg-black h-12 px-10 text-white rounded-md transition-all hover:scale-105 active:scale-100"
                       >
                         Buy Now
