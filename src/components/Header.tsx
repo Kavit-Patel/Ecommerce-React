@@ -1,7 +1,11 @@
+import { useSelector } from "react-redux";
+import { NavLink } from "react-router-dom";
 import { Link, useNavigate } from "react-router-dom";
+import { RootState } from "../store/Store";
 
 export const Header = () => {
   const navigate = useNavigate();
+  const { cartItems } = useSelector((state: RootState) => state.cart);
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px]">
@@ -35,12 +39,12 @@ export const Header = () => {
           </ul>
           <p className="showCart flex flex-col mt-32 md:mt-0 ml-24 md:ml-0 rounded-md md:rounded-none shadow-lg md:shadow-none border-2 md:border-none -z-10 md:z-30 bg-white md:bg-inherit md:flex-row p-4 md:p-0 gap-4 md:gap-1">
             <img src="../../images/Favorites.png" alt="Favorites" />
-            <span className="relative myCart cursor-pointer">
+            <NavLink to="/cart" className="relative myCart cursor-pointer">
               <img src="../../images/Cart.png" alt="Cart" />
               <span className="navCart absolute -top-3 -right-1.5 text-black-950 font-semibold">
-                0
+                {cartItems.length}
               </span>
-            </span>
+            </NavLink>
             <img src="../../images/User.png" alt="User" />
           </p>
           <p className="hamburger md:hidden cursor-pointer">

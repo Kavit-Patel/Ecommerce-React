@@ -12,6 +12,10 @@ export interface dataType {
   productStatus: "idle" | "loading" | "success" | "error";
   productsPriceRange: number[];
 }
-export interface Cart extends productType {
+export interface CartType extends productType {
   quantity?: number;
+}
+export interface localStorageCartType {
+  _id: string;
+  quantity: number;
 }

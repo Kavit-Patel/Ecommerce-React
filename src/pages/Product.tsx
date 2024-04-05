@@ -123,7 +123,7 @@ const Product = () => {
                   </Link>
                   <Link
                     className="addToCart lg:w-1/2 px-3 h-10 bg-black rounded-sm text-white flex justify-center items-center transition-all hover:scale-105 active:scale-100"
-                    to="#"
+                    to={`/cart/${id}`}
                   >
                     Add to Cart
                   </Link>

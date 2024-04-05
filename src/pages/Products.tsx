@@ -49,7 +49,6 @@ const Products = () => {
       current: priceRange[0],
     });
   }, [priceRange]);
-  console.log(location);
   return (
     <main className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">
@@ -187,7 +186,7 @@ const Products = () => {
                             </h2>
                             <p className="font-bold text-lg">{product.price}</p>
                             <Link
-                              to=""
+                              to={`/product/${product._id}`}
                               className="flex justify-center items-center bg-black h-12 px-10 text-white rounded-md transition-all hover:scale-105 active:scale-100"
                             >
                               Buy Now
