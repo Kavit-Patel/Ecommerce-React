@@ -24,14 +24,17 @@ export const registerAsyncUser = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const request = await fetch(`${import.meta.env.VITE_API}/api/addNewUse`, {
-        credentials: "include",
-        method: "POST",
-        headers: {
-          "Content-Type": "Application/Json",
-        },
-        body: JSON.stringify(userDetails),
-      });
+      const request = await fetch(
+        `${import.meta.env.VITE_API}/api/addNewUser`,
+        {
+          credentials: "include",
+          method: "POST",
+          headers: {
+            "Content-Type": "Application/Json",
+          },
+          body: JSON.stringify(userDetails),
+        }
+      );
 
       const data = await request.json();
       if (data.success) {
