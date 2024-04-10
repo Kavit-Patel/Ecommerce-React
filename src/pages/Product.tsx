@@ -3,17 +3,17 @@ import { useParams } from "react-router-dom";
 import { AppDispatch, RootState } from "../store/Store";
 import Loader from "../components/Loader";
 import { useEffect } from "react";
-import { fetchSingleProduct } from "../store/product/productSlice";
+import { fetchSingleProduct } from "../store/product/productApi";
 import { Link } from "react-router-dom";
 
 const Product = () => {
   const params = useParams();
-  const { id } = params;
+  const { productId } = params;
   const dispatch = useDispatch<AppDispatch>();
   const data = useSelector((state: RootState) => state.product);
   useEffect(() => {
-    if (id) dispatch(fetchSingleProduct(id));
-  }, [dispatch, id]);
+    if (productId) dispatch(fetchSingleProduct(productId));
+  }, [dispatch, productId]);
   const colors: string[] = [
     "#000000",
     "#781DBC",
@@ -123,7 +123,7 @@ const Product = () => {
                   </Link>
                   <Link
                     className="addToCart lg:w-1/2 px-3 h-10 bg-black rounded-sm text-white flex justify-center items-center transition-all hover:scale-105 active:scale-100"
-                    to={`/cart/${id}`}
+                    to={`/cart/${productId}`}
                   >
                     Add to Cart
                   </Link>

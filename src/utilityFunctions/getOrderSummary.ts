@@ -1,9 +1,9 @@
-import { CartType } from "../types/types";
+import { fullCartItemType } from "../types/types";
 
-export const getOrderSummary = (products: CartType[]) => {
+export const getOrderSummary = (products: fullCartItemType[]) => {
   if (products.length > 0) {
     const subtotal = products.reduce(
-      (acc, el) => acc + el.price * (el.quantity || 1),
+      (acc, el) => acc + el.product.price * (el.quantity || 1),
       0
     );
     const tax = +(

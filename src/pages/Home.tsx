@@ -1,18 +1,127 @@
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { AppDispatch, RootState } from "../store/Store";
-import { fetchProducts } from "../store/product/productSlice";
-import { useEffect } from "react";
+import { fetchProducts } from "../store/product/productApi";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "react-toastify/dist/ReactToastify.css";
 import Loader from "../components/Loader";
+import {
+  getCartFromDb,
+  syncLsCartQuantityToDb,
+  syncLsCartToDb,
+} from "../store/cart/cartApi";
+import { setCartItemLs } from "../store/cart/cartSlice";
+import { getFullCartItemsFromLs } from "../utilityFunctions/localStorageReduxOperation";
+import { getCartItems } from "../utilityFunctions/localStorageCRUD";
+import {
+  calcCartItemDiffLsDs,
+  calcCartItemQuantityDiffLsDs,
+} from "../utilityFunctions/calcDiffLsDs";
 
 const Home = () => {
   const dispatch = useDispatch<AppDispatch>();
   const data = useSelector((state: RootState) => state.product);
+  const user = useSelector((state: RootState) => state.user);
+  const cart = useSelector((state: RootState) => state.cart);
+  const [resetCartItemDiffLsDs, setResetCartItemDiffLsDs] =
+    useState<boolean>(false);
+  const [resetCartItemQuantityDiffLsDs, setResetCartItemQuantityDiffLsDs] =
+    useState<boolean>(false);
+  const calledForCartSync = useRef<boolean>(false);
+  const calledForCartQuantitySync = useRef<boolean>(false);
+
+  const cartItemDiffLsDb = useMemo(() => {
+    if (resetCartItemDiffLsDs || cart.statusDb === "idle") {
+      return [];
+    }
+    if (cart.statusDb === "success") {
+      return calcCartItemDiffLsDs(cart.cartItemsLs, cart.cartItemsDb);
+    } else {
+      return [];
+    }
+  }, [
+    cart.cartItemsDb,
+    cart.cartItemsLs,
+    resetCartItemDiffLsDs,
+    cart.statusDb,
+  ]);
+
+  const cartItemQuantityDiffLsDs = useMemo(() => {
+    if (resetCartItemQuantityDiffLsDs || cart.statusDb === "idle") {
+      return [];
+    }
+    if (cart.statusDb === "success") {
+      return calcCartItemQuantityDiffLsDs(cart.cartItemsLs, cart.cartItemsDb);
+    } else {
+      return [];
+    }
+  }, [
+    cart.cartItemsDb,
+    cart.cartItemsLs,
+    cart.statusDb,
+    resetCartItemQuantityDiffLsDs,
+  ]);
 
   useEffect(() => {
     dispatch(fetchProducts());
-  }, [dispatch]);
+    if (user.status === "success") {
+      dispatch(getCartFromDb(user.user?._id));
+    }
+  }, [dispatch, user.status, user.user?._id]);
+  useEffect(() => {
+    dispatch(
+      setCartItemLs(getFullCartItemsFromLs(data.products, cart.cartItemsDb))
+    );
+  }, [dispatch, data.products, cart.cartItemsDb, cart.statusDb]);
+
+  useEffect(() => {
+    if (
+      (cart.statusItemSync === "success" &&
+        cart.statusItemQuantitySync === "success") ||
+      !(getCartItems().length > cart.cartItemsDb.length)
+    ) {
+      dispatch(setCartItemLs(cart.cartItemsDb));
+    }
+  }, [
+    cart.cartItemsDb,
+    cart.statusItemSync,
+    cart.statusItemQuantitySync,
+    dispatch,
+  ]);
+  useEffect(() => {
+    if (
+      user.status === "success" &&
+      cartItemQuantityDiffLsDs.length > 0 &&
+      !calledForCartQuantitySync.current
+    ) {
+      dispatch(
+        syncLsCartQuantityToDb({
+          userId: user.user?._id,
+          cartArray: cartItemQuantityDiffLsDs,
+        })
+      );
+      calledForCartQuantitySync.current = true;
+      setResetCartItemQuantityDiffLsDs(true);
+    }
+  }, [cartItemQuantityDiffLsDs, dispatch, user.status, user.user?._id]);
+
+  useEffect(() => {
+    if (
+      user.status === "success" &&
+      cartItemDiffLsDb.length > 0 &&
+      !calledForCartSync.current
+    ) {
+      dispatch(
+        syncLsCartToDb({
+          userId: user.user?._id,
+          cartArray: cartItemDiffLsDb,
+        })
+      );
+      calledForCartSync.current = true;
+      setResetCartItemDiffLsDs(true);
+    }
+  }, [dispatch, user.status, user.user?._id, cartItemDiffLsDb]);
+
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">
@@ -130,7 +239,7 @@ const Home = () => {
           >
             {data.productsStatus === "loading" && <Loader />}
             {data.productsStatus === "success" &&
-              data.products.map(
+              data?.products?.map(
                 (product) =>
                   product.section === "category" && (
                     <div key={product._id} className="categoryCard">

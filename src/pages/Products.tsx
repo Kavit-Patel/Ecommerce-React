@@ -3,11 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AppDispatch, RootState } from "../store/Store";
 import Loader from "../components/Loader";
 import { ChangeEvent, useEffect, useState } from "react";
-import {
-  fetchProducts,
-  getProductsPriceRange,
-} from "../store/product/productSlice";
-
+import { getProductsPriceRange } from "../store/product/productSlice";
+import { fetchProducts } from "../store/product/productApi";
 const Products = () => {
   const location = useLocation();
   const navigate = useNavigate();

@@ -21,10 +21,25 @@ export interface dataType {
   productStatus: "idle" | "loading" | "success" | "error";
   productsPriceRange: number[];
 }
-export interface CartType extends productType {
+export interface fullCartItemType {
+  _id?: string;
+  user: string | userType;
+  quantity: number;
+  product: {
+    _id: string;
+    name: string;
+    price: number;
+    image: string;
+    section: string;
+  };
+}
+export interface DbCartType {
+  _id?: string;
+  product: string | productType;
   quantity?: number;
 }
-export interface localStorageCartType {
-  _id: string;
+export interface LsCartType {
+  productId: string;
+  user: string | userType;
   quantity: number;
 }

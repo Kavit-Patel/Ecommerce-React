@@ -1,4 +1,5 @@
-import { localStorageCartType } from "../types/types";
+import { toast } from "react-toastify";
+import { LsCartType } from "../types/types";
 
 export const getCartItems = () => {
   const storedItems = localStorage.getItem("ecommerceCart");
@@ -10,15 +11,15 @@ export const getCartItems = () => {
   }
 };
 
-export const addToCartLs = (id: string) => {
+export const addToCartLs = (userId: string | undefined, productId: string) => {
   const storedItems = getCartItems();
 
   const alreadyExists = getCartItems().find(
-    (item: localStorageCartType) => item._id == id
+    (item: LsCartType) => item.productId === productId && item.user === userId
   );
   if (alreadyExists) {
-    const updatedCart = storedItems.map((item: localStorageCartType) => {
-      if (item._id === alreadyExists._id) {
+    const updatedCart = storedItems.map((item: LsCartType) => {
+      if (item.productId === alreadyExists._id) {
         item.quantity = alreadyExists.quantity + 1;
       }
       return item;
@@ -27,20 +28,30 @@ export const addToCartLs = (id: string) => {
   } else {
     localStorage.setItem(
       "ecommerceCart",
-      JSON.stringify([...storedItems, { _id: id, quantity: 1 }])
+      JSON.stringify([
+        ...storedItems,
+        { productId: productId, user: userId, quantity: 1 },
+      ])
     );
   }
 };
-export const updateCartItem = (id: string, operation: string) => {
-  let updatedCart: localStorageCartType[] = getCartItems();
+export const updateCartItem = (
+  productId: string,
+  userId: string | undefined,
+  operation: string
+) => {
+  if (!productId || !userId! || !operation) {
+    toast.error("Please Provide all details to update cart !");
+  }
+  let updatedCart: LsCartType[] = getCartItems();
   if (operation === "remove") {
     const index = getCartItems().findIndex(
-      (item: localStorageCartType) => item._id === id
+      (item: LsCartType) => item.productId === productId && item.user === userId
     );
     updatedCart.splice(index, 1);
   } else {
-    updatedCart = updatedCart.map((element: localStorageCartType) => {
-      if (element._id === id) {
+    updatedCart = updatedCart.map((element: LsCartType) => {
+      if (element.productId === productId) {
         element.quantity =
           operation === "increase"
             ? element.quantity + 1

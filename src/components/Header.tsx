@@ -1,17 +1,15 @@
 import { useDispatch, useSelector } from "react-redux";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { AppDispatch, RootState } from "../store/Store";
 import { useEffect, useState } from "react";
-import { setCartItems } from "../store/cart/cartSlice";
-import { getFullCartItems } from "../utilityFunctions/getFullCartItems";
+import { logout } from "../store/user/userSlice";
+import { userLogOut } from "../store/cart/cartSlice";
 
 export const Header = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, status } = useSelector((state: RootState) => state.user);
-  const { cartItems } = useSelector((state: RootState) => state.cart);
-  const { products } = useSelector((state: RootState) => state.product);
+  const { cartItemsLs } = useSelector((state: RootState) => state.cart);
 
   const dispatch = useDispatch<AppDispatch>();
   const [show, setShow] = useState<{ cart: boolean; user: boolean }>({
@@ -19,8 +17,10 @@ export const Header = () => {
     user: false,
   });
   useEffect(() => {
-    dispatch(setCartItems(getFullCartItems(products)));
-  }, [dispatch, products, location.pathname]);
+    if (status !== "success") {
+      dispatch(userLogOut());
+    }
+  }, [dispatch, status]);
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px]">
@@ -61,7 +61,7 @@ export const Header = () => {
             <NavLink to="/cart" className="relative myCart cursor-pointer">
               <img src="../../images/Cart.png" alt="Cart" />
               <span className="navCart absolute -top-3 -right-1.5 text-black-950 font-semibold">
-                {cartItems.length}
+                {cartItemsLs.length}
               </span>
             </NavLink>
             <span className="relative">
@@ -82,6 +82,7 @@ export const Header = () => {
                       Profile
                     </Link>
                     <Link
+                      onClick={() => dispatch(logout())}
                       className="text-sm md:text:md hover:bg-slate-100 hover:font-semibold active:bg-slate-200  active:scale-95  px-1.5 py-1"
                       to="#"
                     >

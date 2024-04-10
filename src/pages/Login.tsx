@@ -1,23 +1,19 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
-// import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { Link } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
-import { AppDispatch, RootState } from "../store/Store";
-import { fetchAsyncUser } from "../store/user/userSlice";
+import { AppDispatch } from "../store/Store";
+import { fetchAsyncUser } from "../store/user/userApi";
 
 const Login = () => {
-  const navigate = useNavigate();
-  const { status } = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch<AppDispatch>();
   const [userDetails, setUserDetails] = useState<{
     email: string;
     password: string;
   }>({ email: "", password: "" });
   const [seePassword, setSeePassword] = useState<boolean>(false);
-  //   const [allowSubmit, setAllowSubmit] = useState<boolean>(false);
   const [loader, setLoader] = useState<boolean>(false);
   const handleUserDetails = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserDetails((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -28,11 +24,7 @@ const Login = () => {
     await dispatch(fetchAsyncUser(userDetails));
     setLoader(false);
   };
-  useEffect(() => {
-    if (status === "success") {
-      navigate({ pathname: "/" });
-    }
-  }, [navigate, status]);
+
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5] flex justify-center items-center">
@@ -65,7 +57,7 @@ const Login = () => {
                   name="password"
                   type={`${seePassword ? "text" : "password"}`}
                   placeholder={`${
-                    seePassword ? "choosepassword" : "*****************"
+                    seePassword ? "enterpassword" : "*****************"
                   }`}
                 />
                 <FaEye

@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import { AppDispatch, RootState } from "../store/Store";
-import { registerAsyncUser } from "../store/user/userSlice";
+import { registerAsyncUser } from "../store/user/userApi";
 
 const Register = () => {
   const navigate = useNavigate();

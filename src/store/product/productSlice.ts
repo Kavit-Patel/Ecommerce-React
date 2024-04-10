@@ -1,33 +1,7 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { dataType } from "../../types/types";
 import { toast } from "react-toastify";
-
-export const fetchProducts = createAsyncThunk("product/fetch", async () => {
-  const request = await fetch(
-    `${import.meta.env.VITE_API}/api/getAllProducts`,
-    { credentials: "include" }
-  );
-  const data = await request.json();
-  if (data.success) {
-    return data.response;
-  } else {
-    throw new Error(data.message);
-  }
-});
-export const fetchSingleProduct = createAsyncThunk(
-  "singleProduct/fetch",
-  async (id: string) => {
-    const request = await fetch(
-      `${import.meta.env.VITE_API}/api/getSingleProduct/${id}`
-    );
-    const data = await request.json();
-    if (data.success) {
-      return data.response;
-    } else {
-      throw new Error(data.message);
-    }
-  }
-);
+import { fetchProducts, fetchSingleProduct } from "./productApi";
 
 const initialState: dataType = {
   products: [],
