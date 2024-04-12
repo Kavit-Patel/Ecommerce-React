@@ -39,7 +39,11 @@ function Cart() {
       addToCartLs(user.user?._id, productId);
       navigate("/cart");
     }
-    dispatch(setCartItemLs(getFullCartItemsFromLs(data.products, cartItemsDb)));
+    dispatch(
+      setCartItemLs(
+        getFullCartItemsFromLs(data.products, cartItemsDb, user.user?._id)
+      )
+    );
   }, [
     dispatch,
     productId,
@@ -57,9 +61,16 @@ function Cart() {
     operation: string
   ) => {
     updateCartItem(productId, userId, operation);
-    dispatch(setCartItemLs(getFullCartItemsFromLs(data.products, cartItemsDb)));
+    dispatch(
+      setCartItemLs(
+        getFullCartItemsFromLs(data.products, cartItemsDb, user.user?._id)
+      )
+    );
   };
-  const handleCheckOut = () => {};
+  const handleCheckOut = () => {
+    navigate("/checkout");
+  };
+
   return (
     <main className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">
@@ -221,7 +232,7 @@ function Cart() {
                       </div>
                       <div
                         onClick={() => handleCheckOut()}
-                        className="w-[80%] h-10 rounded-sm self-center checkOut bg-black text-white flex justify-center items-center transition-all hover:scale-105 active:scale-100"
+                        className="w-[80%] h-10 rounded-sm self-center cursor-pointer bg-black text-white flex justify-center items-center transition-all hover:scale-105 active:scale-100"
                       >
                         CheckOut
                       </div>

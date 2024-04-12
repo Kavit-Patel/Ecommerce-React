@@ -2,27 +2,34 @@ import { fullCartItemType } from "../types/types";
 
 export const calcCartItemDiffLsDs = (
   cartItemsLs: fullCartItemType[],
-  cartItemsDb: fullCartItemType[]
+  cartItemsDb: fullCartItemType[],
+  userId: string | undefined
 ) => {
-  return cartItemsLs.filter(
-    (Lsitem) =>
-      !cartItemsDb.some((dbItem) => {
-        if (dbItem.product._id === Lsitem.product._id) {
-          return true;
-        } else {
-          return false;
-        }
-      })
-  );
+  console.log("lsdb", cartItemsLs, cartItemsDb);
+  return cartItemsLs
+    .filter((item) => item.user === userId)
+    .filter(
+      (lsItem) =>
+        !cartItemsDb.some(
+          (dbItem) =>
+            dbItem.product._id === lsItem.product._id &&
+            dbItem.user === lsItem.user
+        )
+    );
 };
 export const calcCartItemQuantityDiffLsDs = (
   cartItemsLs: fullCartItemType[],
-  cartItemsDb: fullCartItemType[]
+  cartItemsDb: fullCartItemType[],
+  userId: string | undefined
 ) => {
-  return cartItemsLs.filter((lsItem) => {
-    return cartItemsDb.some(
-      (dbItem) =>
-        dbItem._id === lsItem._id && dbItem.quantity !== lsItem.quantity
-    );
-  });
+  return cartItemsLs
+    .filter((item) => item.user === userId)
+    .filter((lsItem) => {
+      return cartItemsDb.some(
+        (dbItem) =>
+          dbItem._id === lsItem._id &&
+          dbItem.user === lsItem.user &&
+          dbItem.quantity !== lsItem.quantity
+      );
+    });
 };

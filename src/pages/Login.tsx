@@ -32,7 +32,7 @@ const Login = () => {
           <form
             onSubmit={(e) => handleSubmit(e)}
             action=""
-            className="border-2 p-6 w-full md:w-[80%] lg:w-[65%]  flex flex-col gap-2 shadow-xl"
+            className="border-2 p-6 w-full md:w-[45%]  flex flex-col gap-2 shadow-xl"
           >
             <div className="text-center mb-4 text-xl font-semibold border-b-2 border-black w-fit pb-1 self-center">
               LogIn

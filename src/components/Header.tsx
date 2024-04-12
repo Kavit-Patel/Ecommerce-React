@@ -61,7 +61,7 @@ export const Header = () => {
             <NavLink to="/cart" className="relative myCart cursor-pointer">
               <img src="../../images/Cart.png" alt="Cart" />
               <span className="navCart absolute -top-3 -right-1.5 text-black-950 font-semibold">
-                {cartItemsLs.length}
+                {status === "success" ? cartItemsLs.length : ""}
               </span>
             </NavLink>
             <span className="relative">

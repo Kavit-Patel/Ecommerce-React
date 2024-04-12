@@ -43,3 +43,12 @@ export interface LsCartType {
   user: string | userType;
   quantity: number;
 }
+export interface addressType {
+  _id?: string;
+  user?: string;
+  street: string;
+  city: string;
+  state: string;
+  zipcode: string;
+  country: string;
+}

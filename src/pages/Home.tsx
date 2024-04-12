@@ -34,8 +34,12 @@ const Home = () => {
     if (resetCartItemDiffLsDs || cart.statusDb === "idle") {
       return [];
     }
-    if (cart.statusDb === "success") {
-      return calcCartItemDiffLsDs(cart.cartItemsLs, cart.cartItemsDb);
+    if (cart.statusDb === "success" && cart.statusLs === "success") {
+      return calcCartItemDiffLsDs(
+        cart.cartItemsLs,
+        cart.cartItemsDb,
+        user.user?._id
+      );
     } else {
       return [];
     }
@@ -44,6 +48,8 @@ const Home = () => {
     cart.cartItemsLs,
     resetCartItemDiffLsDs,
     cart.statusDb,
+    cart.statusLs,
+    user.user?._id,
   ]);
 
   const cartItemQuantityDiffLsDs = useMemo(() => {
@@ -51,7 +57,11 @@ const Home = () => {
       return [];
     }
     if (cart.statusDb === "success") {
-      return calcCartItemQuantityDiffLsDs(cart.cartItemsLs, cart.cartItemsDb);
+      return calcCartItemQuantityDiffLsDs(
+        cart.cartItemsLs,
+        cart.cartItemsDb,
+        user.user?._id
+      );
     } else {
       return [];
     }
@@ -60,6 +70,7 @@ const Home = () => {
     cart.cartItemsLs,
     cart.statusDb,
     resetCartItemQuantityDiffLsDs,
+    user.user?._id,
   ]);
 
   useEffect(() => {
@@ -70,9 +81,17 @@ const Home = () => {
   }, [dispatch, user.status, user.user?._id]);
   useEffect(() => {
     dispatch(
-      setCartItemLs(getFullCartItemsFromLs(data.products, cart.cartItemsDb))
+      setCartItemLs(
+        getFullCartItemsFromLs(data.products, cart.cartItemsDb, user.user?._id)
+      )
     );
-  }, [dispatch, data.products, cart.cartItemsDb, cart.statusDb]);
+  }, [
+    dispatch,
+    data.products,
+    cart.cartItemsDb,
+    cart.statusDb,
+    user.user?._id,
+  ]);
 
   useEffect(() => {
     if (
@@ -121,7 +140,6 @@ const Home = () => {
       setResetCartItemDiffLsDs(true);
     }
   }, [dispatch, user.status, user.user?._id, cartItemDiffLsDb]);
-
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">

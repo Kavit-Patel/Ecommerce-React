@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import { useSelector } from "react-redux";
 import { RootState } from "./store/Store";
 import { useEffect } from "react";
+import CheckOut from "./pages/CheckOut";
 
 const App = () => {
   const user = useSelector((state: RootState) => state.user);
@@ -22,19 +23,24 @@ const App = () => {
       navigate("/");
     } else if (
       user.status !== "success" &&
-      location.pathname.startsWith("/cart")
+      (location.pathname.startsWith("/cart") ||
+        location.pathname === "/checkout")
     ) {
       navigate("/login");
     }
   }, [navigate, user.status, location.pathname]);
   return (
     <Routes>
+      {/* unprotected routes */}
       <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
+
+      {/* protected routes */}
       <Route path="/product/:productId" element={<Product />} />
       <Route path="/products" element={<Products />} />
       <Route path="/cart/:productId?" element={<Cart />} />
+      <Route path="/checkout" element={<CheckOut />} />
     </Routes>
   );
 };

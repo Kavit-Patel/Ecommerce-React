@@ -3,41 +3,44 @@ import { getCartItems } from "./localStorageCRUD";
 
 export const getFullCartItemsFromLs = (
   products: productType[],
-  cartItemdb: fullCartItemType[]
+  cartItemdb: fullCartItemType[],
+  userId: string | undefined
 ) => {
   const lsCart: LsCartType[] = getCartItems();
 
   let fullCartItemsLs: fullCartItemType[] =
     lsCart.length > 0 && products.length > 0
-      ? lsCart.map((lsItem) => {
-          const matched = products.find(
-            (product) => product._id === lsItem.productId
-          );
-          if (!matched) {
+      ? lsCart
+          .filter((item) => item.user === userId)
+          .map((lsItem) => {
+            const matched = products.find(
+              (product) => product._id === lsItem.productId
+            );
+            if (!matched) {
+              return {
+                user: lsItem.user,
+                quantity: lsItem.quantity,
+                product: {
+                  _id: lsItem.productId,
+                  name: "",
+                  price: 0,
+                  image: "",
+                  section: "",
+                },
+              };
+            }
             return {
               user: lsItem.user,
               quantity: lsItem.quantity,
               product: {
                 _id: lsItem.productId,
-                name: "",
-                price: 0,
-                image: "",
-                section: "",
+                name: matched.name,
+                price: matched.price,
+                image: matched.image,
+                section: matched.section,
               },
             };
-          }
-          return {
-            user: lsItem.user,
-            quantity: lsItem.quantity,
-            product: {
-              _id: lsItem.productId,
-              name: matched.name,
-              price: matched.price,
-              image: matched.image,
-              section: matched.section,
-            },
-          };
-        })
+          })
       : [];
   //Adding Cart _id from database to localStorage items
   fullCartItemsLs = fullCartItemsLs.map((item) => {
