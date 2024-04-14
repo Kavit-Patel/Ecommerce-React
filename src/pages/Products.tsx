@@ -5,6 +5,7 @@ import Loader from "../components/Loader";
 import { ChangeEvent, useEffect, useState } from "react";
 import { getProductsPriceRange } from "../store/product/productSlice";
 import { fetchProducts } from "../store/product/productApi";
+import { MdCurrencyRupee } from "react-icons/md";
 const Products = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -181,7 +182,12 @@ const Products = () => {
                             <h2 className="text-sm px-4 font-semibold text-center">
                               {product.name}
                             </h2>
-                            <p className="font-bold text-lg">{product.price}</p>
+                            <p className="font-bold text-lg">
+                              <span className="flex items-center">
+                                <MdCurrencyRupee />
+                                <span>{product.price}</span>
+                              </span>
+                            </p>
                             <Link
                               to={`/product/${product._id}`}
                               className="flex justify-center items-center bg-black h-12 px-10 text-white rounded-md transition-all hover:scale-105 active:scale-100"

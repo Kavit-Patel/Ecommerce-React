@@ -5,6 +5,7 @@ import Loader from "../components/Loader";
 import { useEffect } from "react";
 import { fetchSingleProduct } from "../store/product/productApi";
 import { Link } from "react-router-dom";
+import { MdCurrencyRupee } from "react-icons/md";
 
 const Product = () => {
   const params = useParams();
@@ -62,9 +63,22 @@ const Product = () => {
                   {data.product.name}
                 </div>
                 <div className="flex gap-5 text-2xl font-semibold">
-                  <span className="price">{data.product.price}</span>
+                  <span className="price">
+                    <span className="flex items-center">
+                      <MdCurrencyRupee />
+                      <span>{data.product.price}</span>
+                    </span>
+                  </span>
                   <span className="subPrice line-through text-gray-400">
-                    {(data.product.price + data.product.price * 1.4).toFixed(0)}
+                    <span className="flex items-center">
+                      <MdCurrencyRupee />
+                      <span>
+                        {(
+                          data.product.price +
+                          data.product.price * 1.4
+                        ).toFixed(0)}
+                      </span>
+                    </span>
                   </span>
                 </div>
                 <div className="color flex gap-5 items-center">

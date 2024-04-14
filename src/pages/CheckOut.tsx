@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { AppDispatch, RootState } from "../store/Store";
 import {
   addNewAddress,
@@ -11,19 +11,168 @@ import {
 import { showAddress } from "../utilityFunctions/showAddress";
 import Loader from "../components/Loader";
 import { MdDelete, MdEdit } from "react-icons/md";
+import OrderSteps from "../components/OrderSteps";
+import {
+  calcCartItemDiffLsDs,
+  calcCartItemQuantityDiffLsDs,
+} from "../utilityFunctions/calcDiffLsDs";
+import { setCartItemLs } from "../store/cart/cartSlice";
+import { getFullCartItemsFromLs } from "../utilityFunctions/localStorageReduxOperation";
+import {
+  getCartFromDb,
+  syncLsCartQuantityToDb,
+  syncLsCartToDb,
+} from "../store/cart/cartApi";
+import { getCartItems } from "../utilityFunctions/localStorageCRUD";
+import { getUserPendingOrder } from "../store/order/orderApi";
+import { getOrderProducts } from "../utilityFunctions/getOrderProducts";
+import { getComparedCurrentOrderWithPending } from "../utilityFunctions/getComparedCurrentOrderWithPending";
+import { setComparedOrder } from "../store/order/orderSlice";
+import { toast } from "react-toastify";
+import { getExistingPaymentIntent } from "../store/payment/paymentApi";
 
 const CheckOut = () => {
+  const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const { addresses, fetchedStatus } = useSelector(
     (state: RootState) => state.address
   );
   const user = useSelector((state: RootState) => state.user);
-
+  const cart = useSelector((state: RootState) => state.cart);
+  const data = useSelector((state: RootState) => state.product);
+  const order = useSelector((state: RootState) => state.order);
+  const payment = useSelector((state: RootState) => state.payment);
+  const [resetCartItemDiffLsDs, setResetCartItemDiffLsDs] =
+    useState<boolean>(false);
+  const [resetCartItemQuantityDiffLsDs, setResetCartItemQuantityDiffLsDs] =
+    useState<boolean>(false);
+  const calledForCartSync = useRef<boolean>(false);
+  const calledForCartQuantitySync = useRef<boolean>(false);
   const [radioCheck, setRadioCheck] = useState<string | undefined | null>(null);
   const [edit, setEdit] = useState<{ status: boolean; addressId: string }>({
     status: false,
     addressId: "",
   });
+  const [formVisible, setFormVisible] = useState<boolean>(false);
+  const [addressForm, setAddressForm] = useState<{
+    street: string;
+    city: string;
+    state: string;
+    zipcode: string;
+    country: string;
+  }>({ street: "", city: "", state: "", zipcode: "", country: "" });
+
+  const [loader, setLoader] = useState<boolean>(false);
+
+  const cartItemDiffLsDb = useMemo(() => {
+    if (resetCartItemDiffLsDs || cart.statusDb === "idle") {
+      return [];
+    }
+    if (cart.statusDb === "success" && cart.statusLs === "success") {
+      return calcCartItemDiffLsDs(
+        cart.cartItemsLs,
+        cart.cartItemsDb,
+        user.user?._id
+      );
+    } else {
+      return [];
+    }
+  }, [
+    cart.cartItemsDb,
+    cart.cartItemsLs,
+    resetCartItemDiffLsDs,
+    cart.statusDb,
+    cart.statusLs,
+    user.user?._id,
+  ]);
+
+  const cartItemQuantityDiffLsDs = useMemo(() => {
+    if (resetCartItemQuantityDiffLsDs || cart.statusDb === "idle") {
+      return [];
+    }
+    if (cart.statusDb === "success") {
+      return calcCartItemQuantityDiffLsDs(
+        cart.cartItemsLs,
+        cart.cartItemsDb,
+        user.user?._id
+      );
+    } else {
+      return [];
+    }
+  }, [
+    cart.cartItemsDb,
+    cart.cartItemsLs,
+    cart.statusDb,
+    resetCartItemQuantityDiffLsDs,
+    user.user?._id,
+  ]);
+
+  useEffect(() => {
+    if (user.status === "success") {
+      dispatch(getCartFromDb(user.user?._id));
+    }
+  }, [dispatch, user.status, user.user?._id]);
+  useEffect(() => {
+    dispatch(
+      setCartItemLs(
+        getFullCartItemsFromLs(data.products, cart.cartItemsDb, user.user?._id)
+      )
+    );
+  }, [
+    dispatch,
+    data.products,
+    cart.cartItemsDb,
+    cart.statusDb,
+    user.user?._id,
+  ]);
+
+  useEffect(() => {
+    if (
+      (cart.statusItemSync === "success" &&
+        cart.statusItemQuantitySync === "success") ||
+      !(getCartItems().length > cart.cartItemsDb.length)
+    ) {
+      dispatch(setCartItemLs(cart.cartItemsDb));
+    }
+  }, [
+    cart.cartItemsDb,
+    cart.statusItemSync,
+    cart.statusItemQuantitySync,
+    dispatch,
+  ]);
+  useEffect(() => {
+    if (
+      user.status === "success" &&
+      cartItemQuantityDiffLsDs.length > 0 &&
+      !calledForCartQuantitySync.current
+    ) {
+      dispatch(
+        syncLsCartQuantityToDb({
+          userId: user.user?._id,
+          cartArray: cartItemQuantityDiffLsDs,
+        })
+      );
+      calledForCartQuantitySync.current = true;
+      setResetCartItemQuantityDiffLsDs(true);
+    }
+  }, [cartItemQuantityDiffLsDs, dispatch, user.status, user.user?._id]);
+
+  useEffect(() => {
+    if (
+      user.status === "success" &&
+      cartItemDiffLsDb.length > 0 &&
+      !calledForCartSync.current
+    ) {
+      dispatch(
+        syncLsCartToDb({
+          userId: user.user?._id,
+          cartArray: cartItemDiffLsDb,
+        })
+      );
+      calledForCartSync.current = true;
+      setResetCartItemDiffLsDs(true);
+    }
+  }, [dispatch, user.status, user.user?._id, cartItemDiffLsDb]);
 
   const handleEdit = (addressId: string) => {
     setEdit({ status: true, addressId });
@@ -45,16 +194,7 @@ const CheckOut = () => {
       return prev;
     });
   };
-  const [formVisible, setFormVisible] = useState<boolean>(false);
-  const [addressForm, setAddressForm] = useState<{
-    street: string;
-    city: string;
-    state: string;
-    zipcode: string;
-    country: string;
-  }>({ street: "", city: "", state: "", zipcode: "", country: "" });
 
-  const [loader, setLoader] = useState<boolean>(false);
   const handleAddressDetail = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAddressForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -91,49 +231,54 @@ const CheckOut = () => {
   useEffect(() => {
     dispatch(fetchUserAddress(user.user?._id));
   }, [dispatch, user.user?._id]);
+
+  useEffect(() => {
+    dispatch(getUserPendingOrder(user.user?._id));
+  }, [dispatch, user.user?._id]);
+
+  useEffect(() => {
+    const CurrentOrderProducts = getOrderProducts(cart.cartItemsDb);
+    const compareOrder = getComparedCurrentOrderWithPending(
+      order.pendingOrders,
+      CurrentOrderProducts
+    );
+    if (compareOrder) {
+      toast.info(
+        "This order is already generated ! select address to Proceed to Payment !"
+      );
+    }
+    dispatch(setComparedOrder(compareOrder));
+  }, [dispatch, cart.cartItemsDb, order.pendingOrders]);
+
+  // if comparedOrder is not null and comparedOrderStatus is compared means currently order to be placed is already
+  //generated and assigned to comparedOrder now if clientSecret is null i can call dispatch for generating client secret
+  //using comparedOrder or currentOrder(since setComparedOrder's logic write like that) and so client secret will no longer be null this dispatch will not called again
+  useEffect(() => {
+    if (
+      user.user?._id &&
+      order.comparedOrder &&
+      order.comparedOrderStatus === "compared" &&
+      !payment.clientSecret
+    ) {
+      dispatch(
+        getExistingPaymentIntent({
+          userId: user.user._id,
+          orderId: order.comparedOrder._id,
+        })
+      );
+    }
+  }, [
+    dispatch,
+    order.comparedOrder,
+    order.comparedOrderStatus,
+    payment.clientSecret,
+    user.user?._id,
+  ]);
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5] flex justify-center items-center">
         <section className="w-full h-full py-5 px-8 relative">
-          <div className="w-full flex justify-center items-center">
-            <div className="w-full  flex items-center gap-3">
-              <div className="w-fit flex items-center gap-1">
-                <img
-                  className="bg-gray-800 p-1 rounded-full w-4 h-4"
-                  src="../images/location.png"
-                  alt="location"
-                />
-                <span className="text-[10px] font-semibold">
-                  <p>Step 1</p>
-                  <p>Address</p>
-                </span>
-              </div>
-              <div className="w-[35%] h-0.5 bg-slate-300"></div>
-              <div className="w-fit flex items-center gap-1">
-                <img
-                  className="bg-slate-400 p-1 rounded-full w-4 h-4"
-                  src="../images/shipping.png"
-                  alt="location"
-                />
-                <span className="text-[10px] font-semibold text-slate-400">
-                  <p>Step 2</p>
-                  <p>Shipping</p>
-                </span>
-              </div>
-              <div className="w-[35%] h-0.5 bg-slate-300"></div>
-              <div className="w-fit flex items-center gap-1">
-                <img
-                  className="bg-slate-400 p-1 rounded-full w-4 h-4"
-                  src="../images/payment.png"
-                  alt="location"
-                />
-                <span className="text-[10px] font-semibold text-slate-400">
-                  <p>Step 3</p>
-                  <p>Payment</p>
-                </span>
-              </div>
-            </div>
-          </div>
+          <OrderSteps path={location.pathname} />
           <div
             className={`w-full h-full mt-12 ${
               formVisible ? " filter blur-3xl" : ""

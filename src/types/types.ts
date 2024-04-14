@@ -52,3 +52,20 @@ export interface addressType {
   zipcode: string;
   country: string;
 }
+
+export interface productsFieldType {
+  product: productType;
+  quantity: number;
+  price: number;
+}
+
+export interface orderType {
+  _id?: string;
+  user?: string | userType;
+  products: productsFieldType[];
+  address: string | addressType;
+  subtotal: number;
+  tax: number;
+  shipping: number;
+  total: number;
+}

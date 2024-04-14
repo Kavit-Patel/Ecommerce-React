@@ -5,7 +5,6 @@ export const calcCartItemDiffLsDs = (
   cartItemsDb: fullCartItemType[],
   userId: string | undefined
 ) => {
-  console.log("lsdb", cartItemsLs, cartItemsDb);
   return cartItemsLs
     .filter((item) => item.user === userId)
     .filter(

@@ -10,6 +10,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "./store/Store";
 import { useEffect } from "react";
 import CheckOut from "./pages/CheckOut";
+import Order from "./pages/Order";
 
 const App = () => {
   const user = useSelector((state: RootState) => state.user);
@@ -24,6 +25,7 @@ const App = () => {
     } else if (
       user.status !== "success" &&
       (location.pathname.startsWith("/cart") ||
+        location.pathname.startsWith("/order") ||
         location.pathname === "/checkout")
     ) {
       navigate("/login");
@@ -41,6 +43,7 @@ const App = () => {
       <Route path="/products" element={<Products />} />
       <Route path="/cart/:productId?" element={<Cart />} />
       <Route path="/checkout" element={<CheckOut />} />
+      <Route path="/order/:addressId?" element={<Order />} />
     </Routes>
   );
 };

@@ -11,6 +11,7 @@ import {
 import { getFullCartItemsFromLs } from "../utilityFunctions/localStorageReduxOperation";
 import { setCartItemLs } from "../store/cart/cartSlice";
 import { getOrderSummary } from "../utilityFunctions/getOrderSummary";
+import { MdCurrencyRupee } from "react-icons/md";
 
 function Cart() {
   const navigate = useNavigate();
@@ -106,7 +107,10 @@ function Cart() {
                                 {item.product.name}
                               </span>
                               <span className="id text-xs">
-                                {item.product.price}
+                                <span className="flex items-center">
+                                  <MdCurrencyRupee />
+                                  <span>{item.product.price}</span>
+                                </span>
                               </span>
                             </div>
                             <div className="flex gap-3">
@@ -207,13 +211,23 @@ function Cart() {
                       <div className="flex justify-between font-semibold">
                         <span>Subtotal</span>
                         <span className="subtotal">
-                          {orderSummary ? orderSummary.subtotal : null}
+                          {orderSummary ? (
+                            <span className="flex items-center">
+                              <MdCurrencyRupee />
+                              <span>{orderSummary.subtotal}</span>
+                            </span>
+                          ) : null}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-700">Estimated Tax</span>
                         <span className="tax font-semibold">
-                          {orderSummary ? orderSummary.tax : null}
+                          {orderSummary ? (
+                            <span className="flex items-center">
+                              <MdCurrencyRupee />
+                              <span>{orderSummary.tax}</span>
+                            </span>
+                          ) : null}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -221,15 +235,26 @@ function Cart() {
                           Estimated shipping & Handling
                         </span>
                         <span className="shipping font-semibold">
-                          {orderSummary ? orderSummary.shipping : null}
+                          {orderSummary ? (
+                            <span className="flex items-center">
+                              <MdCurrencyRupee />
+                              <span>{orderSummary.shipping}</span>
+                            </span>
+                          ) : null}
                         </span>
                       </div>
                       <div className="flex justify-between font-semibold">
                         <span>Total</span>
                         <span className="total">
-                          {orderSummary ? orderSummary.total : null}
+                          {orderSummary ? (
+                            <span className="flex items-center">
+                              <MdCurrencyRupee />
+                              <span>{orderSummary.total}</span>
+                            </span>
+                          ) : null}
                         </span>
                       </div>
+
                       <div
                         onClick={() => handleCheckOut()}
                         className="w-[80%] h-10 rounded-sm self-center cursor-pointer bg-black text-white flex justify-center items-center transition-all hover:scale-105 active:scale-100"

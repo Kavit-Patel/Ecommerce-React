@@ -131,7 +131,7 @@ export const Header = () => {
         </div>
         <div className="hidden w-full px-8 h-[48px] bg-[#2e2e2e] lg:flex justify-between">
           <Link
-            to="/src/pages/products.html"
+            to="/products"
             className="flex items-center text-gray-400 gap-2"
           >
             <img
