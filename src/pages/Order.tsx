@@ -8,12 +8,16 @@ import React, { useEffect, useMemo, useState } from "react";
 import { showAddress } from "../utilityFunctions/showAddress";
 import { getOrderSummary } from "../utilityFunctions/getOrderSummary";
 import { MdCurrencyRupee } from "react-icons/md";
-import { addNewOrder } from "../store/order/orderApi";
+import { addNewOrder, getSingleUserOrder } from "../store/order/orderApi";
 import { getOrderProducts } from "../utilityFunctions/getOrderProducts";
 import { getOrderCartIdArr } from "../utilityFunctions/getOrderCartIdArr";
 import Loader from "../components/Loader";
 import Payment from "../components/Payment";
-import { createPaymentIntent } from "../store/payment/paymentApi";
+import {
+  createPaymentIntent,
+  getExistingPaymentIntent,
+} from "../store/payment/paymentApi";
+import { fetchUserAddress } from "../store/address/addressApi";
 
 const Order = () => {
   const params = useParams();
@@ -43,8 +47,14 @@ const Order = () => {
     if (myAddress) {
       return showAddress(myAddress);
     }
+    if (!addressId && order.currentOrder && order.currentOrder.address) {
+      const myAddress = addresses.find(
+        (add) => add._id === order.currentOrder?.address
+      );
+      return showAddress(myAddress);
+    }
     return "no address";
-  }, [addressId, addresses]);
+  }, [addressId, addresses, order.currentOrder]);
 
   useEffect(() => {
     const orderProducts = getOrderProducts(cart.cartItemsDb);
@@ -114,6 +124,24 @@ const Order = () => {
     user.user?._id,
     payment.fetchedStatus,
   ]);
+  useEffect(() => {
+    if (location.state?.orderId) {
+      dispatch(
+        getExistingPaymentIntent({
+          userId: user.user?._id,
+          orderId: location.state.orderId,
+        })
+      );
+      dispatch(
+        getSingleUserOrder({
+          userId: user.user?._id,
+          orderId: location.state.orderId,
+        })
+      );
+      dispatch(fetchUserAddress(user.user?._id));
+    }
+  }, [dispatch, location.state?.orderId, user.user?._id]);
+  console.log(order.currentOrder, addresses);
   return (
     <main className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">

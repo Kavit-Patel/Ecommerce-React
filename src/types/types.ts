@@ -59,10 +59,23 @@ export interface productsFieldType {
   price: number;
 }
 
+export interface paymentType {
+  _id?: string;
+  user: string | userType;
+  order: string | orderType;
+  amount: number;
+  payMode: string;
+  paymentIntent: string;
+}
+
 export interface orderType {
   _id?: string;
   user?: string | userType;
   products: productsFieldType[];
+  payment?: {
+    payId: string | paymentType;
+    paymentStatus: string;
+  };
   address: string | addressType;
   subtotal: number;
   tax: number;

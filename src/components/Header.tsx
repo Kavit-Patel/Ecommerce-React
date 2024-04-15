@@ -82,6 +82,12 @@ export const Header = () => {
                       Profile
                     </Link>
                     <Link
+                      className="text-sm md:text:md hover:bg-slate-100 hover:font-semibold active:bg-slate-200  active:scale-95  px-1.5 py-1"
+                      to="/myorders"
+                    >
+                      myOrders
+                    </Link>
+                    <Link
                       onClick={() => dispatch(logout())}
                       className="text-sm md:text:md hover:bg-slate-100 hover:font-semibold active:bg-slate-200  active:scale-95  px-1.5 py-1"
                       to="#"

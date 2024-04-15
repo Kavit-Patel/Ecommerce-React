@@ -11,6 +11,7 @@ import { RootState } from "./store/Store";
 import { useEffect } from "react";
 import CheckOut from "./pages/CheckOut";
 import Order from "./pages/Order";
+import MyOrders from "./pages/MyOrders";
 
 const App = () => {
   const user = useSelector((state: RootState) => state.user);
@@ -26,7 +27,8 @@ const App = () => {
       user.status !== "success" &&
       (location.pathname.startsWith("/cart") ||
         location.pathname.startsWith("/order") ||
-        location.pathname === "/checkout")
+        location.pathname === "/checkout" ||
+        location.pathname === "/myorders")
     ) {
       navigate("/login");
     }
@@ -44,6 +46,7 @@ const App = () => {
       <Route path="/cart/:productId?" element={<Cart />} />
       <Route path="/checkout" element={<CheckOut />} />
       <Route path="/order/:addressId?" element={<Order />} />
+      <Route path="/myOrders" element={<MyOrders />} />
     </Routes>
   );
 };

@@ -117,3 +117,46 @@ export const getExistingPaymentIntent = createAsyncThunk(
     }
   }
 );
+
+export const paymentSuccessed = createAsyncThunk(
+  "payment/succed",
+  async (
+    dataObject: {
+      userId: string | undefined;
+      paymentId: string | undefined;
+      orderId: string | undefined;
+      payMode: string | undefined;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const request = await fetch(
+        `${import.meta.env.VITE_API}/api/paymentSuccessed/${
+          dataObject.userId
+        }/${dataObject.paymentId}`,
+        {
+          credentials: "include",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            payMode: dataObject.payMode,
+            orderId: dataObject.orderId,
+          }),
+        }
+      );
+      const data = await request.json();
+      if (data.success) {
+        toast.success(data.message);
+        return data.response;
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Payment Succed error !";
+      return rejectWithValue(errorMessage);
+    }
+  }
+);

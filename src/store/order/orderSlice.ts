@@ -1,23 +1,34 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { orderType } from "../../types/types";
-import { addNewOrder, getUserPendingOrder } from "./orderApi";
+import {
+  addNewOrder,
+  getSingleUserOrder,
+  getUserOrders,
+  getUserPendingOrder,
+} from "./orderApi";
 import { toast } from "react-toastify";
 
 interface initialStateType {
   currentOrder: orderType | null;
   pendingOrders: orderType[];
+  allOrders: orderType[];
   comparedOrder: orderType | null;
   comparedOrderStatus: "idle" | "compared";
   createdStatus: "idle" | "pending" | "success" | "error";
   fetchedPendingOrderStatus: "idle" | "pending" | "success" | "error";
+  allOrderFetchingStatus: "idle" | "pending" | "success" | "error";
+  singleOrderFetchingStatus: "idle" | "pending" | "success" | "error";
 }
 const initialState: initialStateType = {
   currentOrder: null,
   pendingOrders: [],
+  allOrders: [],
   comparedOrder: null,
   comparedOrderStatus: "idle",
   createdStatus: "idle",
   fetchedPendingOrderStatus: "idle",
+  allOrderFetchingStatus: "idle",
+  singleOrderFetchingStatus: "idle",
 };
 const orderSlice = createSlice({
   name: "order",
@@ -52,6 +63,28 @@ const orderSlice = createSlice({
       })
       .addCase(getUserPendingOrder.pending, (state) => {
         state.fetchedPendingOrderStatus = "pending";
+      })
+      .addCase(getUserOrders.fulfilled, (state, action) => {
+        state.allOrderFetchingStatus = "success";
+        state.allOrders = action.payload;
+      })
+      .addCase(getUserOrders.rejected, (state, action) => {
+        state.allOrderFetchingStatus = "error";
+        toast.error(action.error.message);
+      })
+      .addCase(getUserOrders.pending, (state) => {
+        state.allOrderFetchingStatus = "pending";
+      })
+      .addCase(getSingleUserOrder.fulfilled, (state, action) => {
+        state.singleOrderFetchingStatus = "success";
+        state.currentOrder = action.payload;
+      })
+      .addCase(getSingleUserOrder.rejected, (state, action) => {
+        state.singleOrderFetchingStatus = "error";
+        toast.error(action.error.message);
+      })
+      .addCase(getSingleUserOrder.pending, (state) => {
+        state.singleOrderFetchingStatus = "pending";
       });
   },
 });

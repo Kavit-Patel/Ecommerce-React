@@ -5,18 +5,23 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { useSelector } from "react-redux";
-import { RootState } from "../store/Store";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../store/Store";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import Loader from "./Loader";
+import { paymentSuccessed } from "../store/payment/paymentApi";
 // import { useState } from "react";
 
 const stripePromise = loadStripe(`${import.meta.env.VITE_STRIPE_PUBLISH_KEY}`);
 
 const PaymentForm = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const { currentOrder } = useSelector((state: RootState) => state.order);
+  const { paymentObject } = useSelector((state: RootState) => state.payment);
+  const { user } = useSelector((state: RootState) => state.user);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const stripe = useStripe();
   const elements = useElements();
@@ -36,7 +41,15 @@ const PaymentForm = () => {
       );
     }
     if (paymentIntent.status === "succeeded") {
-      navigate("/");
+      dispatch(
+        paymentSuccessed({
+          userId: user?._id,
+          paymentId: paymentObject?._id,
+          orderId: currentOrder?._id,
+          payMode: "Credit Card",
+        })
+      );
+      navigate("/myorders");
     }
     setIsProcessing(false);
   };
