@@ -7,16 +7,21 @@ import "react-toastify/dist/ReactToastify.css";
 import Loader from "../components/Loader";
 import {
   getCartFromDb,
+  removeItem,
   syncLsCartQuantityToDb,
   syncLsCartToDb,
 } from "../store/cart/cartApi";
 import { setCartItemLs } from "../store/cart/cartSlice";
-import { getFullCartItemsFromLs } from "../utilityFunctions/localStorageReduxOperation";
+import {
+  getFullCartItemsFromLs,
+  getItemProductify,
+} from "../utilityFunctions/localStorageReduxOperation";
 import { getCartItems } from "../utilityFunctions/localStorageCRUD";
 import {
   calcCartItemDiffLsDs,
   calcCartItemQuantityDiffLsDs,
 } from "../utilityFunctions/calcDiffLsDs";
+import { vanillaUserCartAddition } from "../utilityFunctions/vanillaUserCartAddition";
 
 const Home = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -140,6 +145,43 @@ const Home = () => {
       setResetCartItemDiffLsDs(true);
     }
   }, [dispatch, user.status, user.user?._id, cartItemDiffLsDb]);
+
+  // if user redirected to login from vanilla-ecommerce website
+  // and after successfull login he comes here then logic to get his cart is here
+  useEffect(() => {
+    if (
+      user.vanillaUserStatus &&
+      user.vanillaUserCart &&
+      user.user?._id &&
+      cart.statusDb === "success"
+    ) {
+      const itemTobeRemoved = vanillaUserCartAddition(
+        user.vanillaUserCart,
+        user.user._id
+      );
+      if (cart.cartItemsDb.length > 0) {
+        const itemTobeRemovedProductiFy = getItemProductify(
+          itemTobeRemoved,
+          data.products,
+          cart.cartItemsDb
+        );
+        if (itemTobeRemovedProductiFy.length > 0) {
+          itemTobeRemovedProductiFy.forEach((item) => {
+            dispatch(removeItem({ userId: user.user?._id, cartId: item._id }));
+          });
+        }
+      }
+    }
+  }, [
+    dispatch,
+    data.products,
+    cart.cartItemsDb,
+    user.vanillaUserStatus,
+    user.user?._id,
+    user.vanillaUserCart,
+    cart.statusDb,
+  ]);
+
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">

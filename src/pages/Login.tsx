@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useDispatch } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import { AppDispatch } from "../store/Store";
 import { fetchAsyncUser } from "../store/user/userApi";
+import { setVanillaUser } from "../store/user/userSlice";
 
 const Login = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const [userDetails, setUserDetails] = useState<{
     email: string;
@@ -25,6 +27,17 @@ const Login = () => {
     setLoader(false);
   };
 
+  //if redirected from vanilla-ecommerce front end logic
+  const [searchParams] = useSearchParams();
+  const queryCart = searchParams.get("queryCart");
+  useEffect(() => {
+    if (queryCart) {
+      const vanillaCart = JSON.parse(decodeURIComponent(queryCart));
+      dispatch(setVanillaUser({ status: true, data: vanillaCart }));
+      navigate("/login");
+    }
+  }, [dispatch, queryCart, navigate]);
+  //venilla-ecommerce redirection logic ends
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5] flex justify-center items-center">

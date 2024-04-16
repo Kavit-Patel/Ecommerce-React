@@ -21,8 +21,19 @@ export const Header = () => {
       dispatch(userLogOut());
     }
   }, [dispatch, status]);
+  useEffect(() => {
+    const handleClick = () => {
+      setShow((prev) => ({ ...prev, user: false }));
+    };
+    window.addEventListener("click", () => handleClick());
+
+    return () => window.removeEventListener("click", () => handleClick());
+  }, []);
   return (
-    <div className="w-full bg-[#DFDFDF] flex justify-center">
+    <div
+      onClick={() => setShow((prev) => ({ ...prev, user: false }))}
+      className="w-full bg-[#DFDFDF] flex justify-center"
+    >
       <div className="w-[375px] md:w-[800px] lg:w-[1000px]">
         <div className="w-full flex items-center justify-between px-8 md:px-4 h-[88px] bg-[#f5f5f5]">
           <img src="../../images/Logo.png" alt="Logo" />
@@ -75,20 +86,26 @@ export const Header = () => {
                     <span className="text-sm md:text:md hover:bg-slate-100 hover:font-semibold active:bg-slate-200  active:scale-95  px-1.5 py-1">
                       {user?.name?.toUpperCase()}
                     </span>
-                    <Link
+                    {/* <Link
                       className="text-sm md:text:md hover:bg-slate-100 hover:font-semibold active:bg-slate-200  active:scale-95  px-1.5 py-1"
                       to="#"
                     >
                       Profile
-                    </Link>
+                    </Link> */}
                     <Link
+                      onClick={() =>
+                        setShow((prev) => ({ ...prev, user: !prev.user }))
+                      }
                       className="text-sm md:text:md hover:bg-slate-100 hover:font-semibold active:bg-slate-200  active:scale-95  px-1.5 py-1"
                       to="/myorders"
                     >
                       myOrders
                     </Link>
                     <Link
-                      onClick={() => dispatch(logout())}
+                      onClick={() => {
+                        dispatch(logout());
+                        setShow((prev) => ({ ...prev, user: !prev.user }));
+                      }}
                       className="text-sm md:text:md hover:bg-slate-100 hover:font-semibold active:bg-slate-200  active:scale-95  px-1.5 py-1"
                       to="#"
                     >
@@ -119,9 +136,10 @@ export const Header = () => {
                 )}
               </span>
               <img
-                onClick={() =>
-                  setShow((prev) => ({ ...prev, user: !prev.user }))
-                }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShow((prev) => ({ ...prev, user: !prev.user }));
+                }}
                 className="  cursor-pointer"
                 src="../../images/User.png"
                 alt="User"

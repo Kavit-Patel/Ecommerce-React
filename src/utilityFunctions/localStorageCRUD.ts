@@ -1,14 +1,42 @@
 import { toast } from "react-toastify";
 import { LsCartType } from "../types/types";
 
-export const getCartItems = () => {
-  const storedItems = localStorage.getItem("ecommerceCart");
+export const getCartItems = (key?: string) => {
+  const storedItems = localStorage.getItem(key || "ecommerceCart");
   if (storedItems) {
     return JSON.parse(storedItems);
   } else {
     localStorage.setItem("ecommerceCart", "[]");
     return [];
   }
+};
+export const addVanillaCartToLs = (
+  userId: string | undefined,
+  productId: string,
+  quantity: number
+) => {
+  const storedItems = getCartItems();
+  localStorage.setItem(
+    "ecommerceCart",
+    JSON.stringify([
+      ...storedItems,
+      { productId: productId, user: userId, quantity },
+    ])
+  );
+};
+export const updateVanillaCartItemQuantityToLs = (
+  userId: string | undefined,
+  productId: string,
+  quantity: number
+) => {
+  const storedItems = getCartItems();
+  const updatedCart = storedItems.map((item: LsCartType) => {
+    if (item.user === userId && item.productId === productId) {
+      item.quantity = quantity;
+    }
+    return item;
+  });
+  localStorage.setItem("ecommerceCart", JSON.stringify(updatedCart));
 };
 
 export const addToCartLs = (userId: string | undefined, productId: string) => {

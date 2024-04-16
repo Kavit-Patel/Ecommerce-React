@@ -43,6 +43,11 @@ export interface LsCartType {
   user: string | userType;
   quantity: number;
 }
+export interface LsCartTypeVanillaUser {
+  _id: string;
+  user?: string | userType;
+  quantity: number;
+}
 export interface addressType {
   _id?: string;
   user?: string;
