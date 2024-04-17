@@ -71,3 +71,32 @@ export const fetchAsyncUser = createAsyncThunk(
     }
   }
 );
+
+export const autoLoginWithCookie = createAsyncThunk(
+  "user/auto-login",
+  async (_, { rejectWithValue }) => {
+    try {
+      const request = await fetch(
+        `${import.meta.env.VITE_API}/api/cookieAutoLogin`,
+        {
+          credentials: "include",
+          headers: {
+            "Content-Type": "Application/Json",
+          },
+        }
+      );
+      const data = await request.json();
+      if (data.success) {
+        toast.success(data.message);
+        return data.response;
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "User Login Failed";
+      toast.error(errorMessage);
+      return rejectWithValue(errorMessage);
+    }
+  }
+);

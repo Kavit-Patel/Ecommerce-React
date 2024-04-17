@@ -18,6 +18,8 @@ import {
   getExistingPaymentIntent,
 } from "../store/payment/paymentApi";
 import { fetchUserAddress } from "../store/address/addressApi";
+import { setCartItemLs } from "../store/cart/cartSlice";
+import { getCartFromDb } from "../store/cart/cartApi";
 
 const Order = () => {
   const params = useParams();
@@ -26,6 +28,7 @@ const Order = () => {
   const { addressId } = params;
   const dispatch = useDispatch<AppDispatch>();
   const { addresses } = useSelector((state: RootState) => state.address);
+  const data = useSelector((state: RootState) => state.product);
   const cart = useSelector((state: RootState) => state.cart);
   const user = useSelector((state: RootState) => state.user);
   const order = useSelector((state: RootState) => state.order);
@@ -85,6 +88,7 @@ const Order = () => {
   }, [
     addressId,
     dispatch,
+    data.products,
     user.user?._id,
     orderSummary,
     navigate,
@@ -93,6 +97,12 @@ const Order = () => {
     order.comparedOrderStatus,
     order.fetchedPendingOrderStatus,
   ]);
+  useEffect(() => {
+    if (user.user?._id && order.createdStatus === "success") {
+      dispatch(getCartFromDb(user.user._id)); //after order generation db cart item state needs to be latest(empty)
+      dispatch(setCartItemLs([])); // after order generation ls cart item state needs to be emptied
+    }
+  }, [dispatch, order.createdStatus, user.user?._id]);
 
   useEffect(() => {
     setOrderSummary(getOrderSummary(cart.cartItemsDb));
@@ -141,7 +151,6 @@ const Order = () => {
       dispatch(fetchUserAddress(user.user?._id));
     }
   }, [dispatch, location.state?.orderId, user.user?._id]);
-  console.log(order.currentOrder, addresses);
   return (
     <main className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">

@@ -23,17 +23,15 @@ export const Header = () => {
   }, [dispatch, status]);
   useEffect(() => {
     const handleClick = () => {
-      setShow((prev) => ({ ...prev, user: false }));
+      setShow(() => ({ user: false, cart: false }));
     };
     window.addEventListener("click", () => handleClick());
 
     return () => window.removeEventListener("click", () => handleClick());
   }, []);
+  console.log("show", show);
   return (
-    <div
-      onClick={() => setShow((prev) => ({ ...prev, user: false }))}
-      className="w-full bg-[#DFDFDF] flex justify-center"
-    >
+    <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px]">
         <div className="w-full flex items-center justify-between px-8 md:px-4 h-[88px] bg-[#f5f5f5]">
           <img src="../../images/Logo.png" alt="Logo" />
@@ -146,11 +144,15 @@ export const Header = () => {
               />
             </span>
           </p>
-          <p
-            onClick={() => setShow((prev) => ({ ...prev, cart: !prev.cart }))}
-            className="hamburger md:hidden cursor-pointer"
-          >
-            <img src="../../images/Burger.png" alt="Ham-burger" />
+          <p className="hamburger md:hidden cursor-pointer">
+            <img
+              onClick={(e) => {
+                e.stopPropagation();
+                setShow((prev) => ({ ...prev, cart: !prev.cart }));
+              }}
+              src="../../images/Burger.png"
+              alt="Ham-burger"
+            />
           </p>
         </div>
         <div className="hidden w-full px-8 h-[48px] bg-[#2e2e2e] lg:flex justify-between">

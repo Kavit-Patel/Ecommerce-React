@@ -39,7 +39,11 @@ const Home = () => {
     if (resetCartItemDiffLsDs || cart.statusDb === "idle") {
       return [];
     }
-    if (cart.statusDb === "success" && cart.statusLs === "success") {
+    if (
+      cart.statusDb === "success" &&
+      cart.statusLs === "success" &&
+      cart.cartItemsLs.length > 0
+    ) {
       return calcCartItemDiffLsDs(
         cart.cartItemsLs,
         cart.cartItemsDb,
@@ -181,10 +185,9 @@ const Home = () => {
     user.vanillaUserCart,
     cart.statusDb,
   ]);
-
   return (
-    <div className="w-full bg-[#DFDFDF] flex justify-center">
-      <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">
+    <div className=" bg-[#DFDFDF] w-full flex justify-center">
+      <div className={`w-[375px] md:w-[800px] lg:w-[1000px] `}>
         {/* Hero Section Starts */}
         <div className="w-full h-[632px] px-8 bg-[#211C24] flex flex-col-reverse lg:flex-row justify-evenly items-center">
           <div className="flex flex-col gap-2 justify-center pl-20 text-xs md:text-sm lg:text-lg">

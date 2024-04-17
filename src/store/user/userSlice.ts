@@ -1,7 +1,11 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { LsCartTypeVanillaUser, userType } from "../../types/types";
 import { toast } from "react-toastify";
-import { fetchAsyncUser, registerAsyncUser } from "./userApi";
+import {
+  autoLoginWithCookie,
+  fetchAsyncUser,
+  registerAsyncUser,
+} from "./userApi";
 
 interface initialStateType {
   user: userType | null;
@@ -52,6 +56,17 @@ const userSlice = createSlice({
         toast.error(action.error.message);
       })
       .addCase(registerAsyncUser.pending, (state) => {
+        state.status = "pending";
+      })
+      .addCase(autoLoginWithCookie.fulfilled, (state, action) => {
+        state.status = "success";
+        state.user = action.payload;
+      })
+      .addCase(autoLoginWithCookie.rejected, (state, action) => {
+        state.status = "error";
+        toast.error(action.error.message);
+      })
+      .addCase(autoLoginWithCookie.pending, (state) => {
         state.status = "pending";
       });
   },
