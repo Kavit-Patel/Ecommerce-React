@@ -21,6 +21,7 @@ import {
   calcCartItemQuantityDiffLsDs,
 } from "../utilityFunctions/calcDiffLsDs";
 import { vanillaUserCartAddition } from "../utilityFunctions/vanillaUserCartAddition";
+import { toast } from "react-toastify";
 
 const Home = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -180,6 +181,7 @@ const Home = () => {
         user.vanillaUserCart,
         user.user._id
       );
+      toast.info("Your Cart Items Placed In Cart Successfully !");
       if (cart.cartItemsDb.length > 0) {
         const itemTobeRemovedProductiFy = getItemProductify(
           itemTobeRemoved,

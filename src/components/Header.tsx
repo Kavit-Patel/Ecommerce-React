@@ -29,7 +29,6 @@ export const Header = () => {
 
     return () => window.removeEventListener("click", () => handleClick());
   }, []);
-  console.log("show", show);
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px]">
