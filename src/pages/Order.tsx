@@ -20,6 +20,7 @@ import {
 import { fetchUserAddress } from "../store/address/addressApi";
 import { setCartItemLs } from "../store/cart/cartSlice";
 import { getCartFromDb } from "../store/cart/cartApi";
+import { setVanillaUser } from "../store/user/userSlice";
 
 const Order = () => {
   const params = useParams();
@@ -101,6 +102,7 @@ const Order = () => {
     if (user.user?._id && order.createdStatus === "success") {
       dispatch(getCartFromDb(user.user._id)); //after order generation db cart item state needs to be latest(empty)
       dispatch(setCartItemLs([])); // after order generation ls cart item state needs to be emptied
+      dispatch(setVanillaUser({ status: false, data: null })); //after order generation vanilla user status needs to be false as well as vanilla user cart needs to be emptied
     }
   }, [dispatch, order.createdStatus, user.user?._id]);
 
