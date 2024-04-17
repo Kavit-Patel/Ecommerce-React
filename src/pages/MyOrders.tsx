@@ -6,6 +6,8 @@ import Loader from "../components/Loader";
 import { useNavigate } from "react-router-dom";
 import { setClientSecret } from "../store/payment/paymentSlice";
 import { setComparedOrder } from "../store/order/orderSlice";
+import { getCartFromDb } from "../store/cart/cartApi";
+import { setCartItemLs } from "../store/cart/cartSlice";
 
 const MyOrders = () => {
   const navigate = useNavigate();
@@ -29,6 +31,13 @@ const MyOrders = () => {
     dispatch(setClientSecret(undefined));
     dispatch(setComparedOrder(undefined));
   }, [dispatch]);
+
+  useEffect(() => {
+    if (user.user?._id && paymentSuccedStatus === "success") {
+      dispatch(getCartFromDb(user.user._id)); //after order generation db cart item state needs to be latest(empty)
+      dispatch(setCartItemLs([])); // after order generation ls cart item state needs to be emptied
+    }
+  }, [dispatch, paymentSuccedStatus, user.user?._id]);
 
   return (
     <main className="w-full bg-[#DFDFDF] flex justify-center">

@@ -16,7 +16,6 @@ import {
   getFullCartItemsFromLs,
   getItemProductify,
 } from "../utilityFunctions/localStorageReduxOperation";
-import { getCartItems } from "../utilityFunctions/localStorageCRUD";
 import {
   calcCartItemDiffLsDs,
   calcCartItemQuantityDiffLsDs,
@@ -28,12 +27,26 @@ const Home = () => {
   const data = useSelector((state: RootState) => state.product);
   const user = useSelector((state: RootState) => state.user);
   const cart = useSelector((state: RootState) => state.cart);
+  const order = useSelector((state: RootState) => state.order);
+  const { paymentSuccedStatus } = useSelector(
+    (state: RootState) => state.payment
+  );
   const [resetCartItemDiffLsDs, setResetCartItemDiffLsDs] =
     useState<boolean>(false);
   const [resetCartItemQuantityDiffLsDs, setResetCartItemQuantityDiffLsDs] =
     useState<boolean>(false);
   const calledForCartSync = useRef<boolean>(false);
   const calledForCartQuantitySync = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (
+      user.user?._id &&
+      (paymentSuccedStatus === "success" || order.createdStatus === "success")
+    ) {
+      dispatch(getCartFromDb(user.user._id)); //after order generation db cart item state needs to be latest(empty)
+      dispatch(setCartItemLs([])); // after order generation ls cart item state needs to be emptied
+    }
+  }, [dispatch, paymentSuccedStatus, order.createdStatus, user.user?._id]);
 
   const cartItemDiffLsDb = useMemo(() => {
     if (resetCartItemDiffLsDs || cart.statusDb === "idle") {
@@ -84,38 +97,42 @@ const Home = () => {
 
   useEffect(() => {
     dispatch(fetchProducts());
-    if (user.status === "success") {
+    if (
+      user.status === "success" &&
+      paymentSuccedStatus === "idle" &&
+      order.createdStatus === "idle"
+    ) {
       dispatch(getCartFromDb(user.user?._id));
     }
-  }, [dispatch, user.status, user.user?._id]);
-  useEffect(() => {
-    dispatch(
-      setCartItemLs(
-        getFullCartItemsFromLs(data.products, cart.cartItemsDb, user.user?._id)
-      )
-    );
   }, [
     dispatch,
+    user.status,
+    user.user?._id,
+    paymentSuccedStatus,
+    order.createdStatus,
+  ]);
+  useEffect(() => {
+    if (paymentSuccedStatus === "idle" && order.createdStatus === "idle") {
+      dispatch(
+        setCartItemLs(
+          getFullCartItemsFromLs(
+            data.products,
+            cart.cartItemsDb,
+            user.user?._id
+          )
+        )
+      );
+    }
+  }, [
+    dispatch,
+    paymentSuccedStatus,
+    order.createdStatus,
     data.products,
     cart.cartItemsDb,
     cart.statusDb,
     user.user?._id,
   ]);
 
-  useEffect(() => {
-    if (
-      (cart.statusItemSync === "success" &&
-        cart.statusItemQuantitySync === "success") ||
-      !(getCartItems().length > cart.cartItemsDb.length)
-    ) {
-      dispatch(setCartItemLs(cart.cartItemsDb));
-    }
-  }, [
-    cart.cartItemsDb,
-    cart.statusItemSync,
-    cart.statusItemQuantitySync,
-    dispatch,
-  ]);
   useEffect(() => {
     if (
       user.status === "success" &&
