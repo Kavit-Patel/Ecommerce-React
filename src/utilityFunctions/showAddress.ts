@@ -1,6 +1,6 @@
-import { addressType } from "../types/types";
+import { IAddress } from "../types/types";
 
-export const showAddress = (address: addressType | undefined) => {
+export const showAddress = (address: IAddress | undefined) => {
   if (address) {
     const { street, city, state, zipcode, country } = address;
 

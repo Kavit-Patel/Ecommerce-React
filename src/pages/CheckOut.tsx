@@ -1,58 +1,75 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link, useLocation } from "react-router-dom";
-import { AppDispatch, RootState } from "../store/Store";
-import {
-  addNewAddress,
-  deleteUserAddress,
-  fetchUserAddress,
-  updateUserAddress,
-} from "../store/address/addressApi";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { showAddress } from "../utilityFunctions/showAddress";
 import Loader from "../components/Loader";
 import { MdDelete, MdEdit } from "react-icons/md";
 import OrderSteps from "../components/OrderSteps";
-import {
-  calcCartItemDiffLsDs,
-  calcCartItemQuantityDiffLsDs,
-} from "../utilityFunctions/calcDiffLsDs";
-import { setCartItemLs } from "../store/cart/cartSlice";
-import { getFullCartItemsFromLs } from "../utilityFunctions/localStorageReduxOperation";
-import {
-  getCartFromDb,
-  syncLsCartQuantityToDb,
-  syncLsCartToDb,
-} from "../store/cart/cartApi";
 import { getCartItems } from "../utilityFunctions/localStorageCRUD";
-import { getUserPendingOrder } from "../store/order/orderApi";
-import { getOrderProducts } from "../utilityFunctions/getOrderProducts";
-import { getComparedCurrentOrderWithPending } from "../utilityFunctions/getComparedCurrentOrderWithPending";
-import { setComparedOrder } from "../store/order/orderSlice";
 import { toast } from "react-toastify";
-import { getExistingPaymentIntent } from "../store/payment/paymentApi";
+import {
+  useAddManyToCart,
+  useAddNewAddress,
+  useCreatePaymentIntent,
+  useDeleteAddress,
+  useFetchUserAdress,
+  useFetchUserCart,
+  useNewOrder,
+  useUpdateUserAddress,
+} from "../api/api";
+import { IAddress, ICart, IOrder, IPayment, IUser } from "../types/types";
+import { useQueryClient } from "react-query";
+import { getOrderSummary } from "../utilityFunctions/getOrderSummary";
 
 const CheckOut = () => {
   const location = useLocation();
-  const dispatch = useDispatch<AppDispatch>();
-  const { addresses, fetchedStatus } = useSelector(
-    (state: RootState) => state.address
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const lsCart: ICart[] = getCartItems("ecommerceCart");
+  const user: IUser | undefined = queryClient.getQueryData("user");
+  const cachedAddress: IAddress[] | undefined = queryClient.getQueryData([
+    "address",
+    user?._id,
+  ]);
+  const { isLoading: isAddressLoading, refetch } = useFetchUserAdress(
+    user?._id
   );
-  const user = useSelector((state: RootState) => state.user);
-  const cart = useSelector((state: RootState) => state.cart);
-  const data = useSelector((state: RootState) => state.product);
-  const order = useSelector((state: RootState) => state.order);
-  const payment = useSelector((state: RootState) => state.payment);
-  const [resetCartItemDiffLsDs, setResetCartItemDiffLsDs] =
-    useState<boolean>(false);
-  const [resetCartItemQuantityDiffLsDs, setResetCartItemQuantityDiffLsDs] =
-    useState<boolean>(false);
-  const calledForCartSync = useRef<boolean>(false);
-  const calledForCartQuantitySync = useRef<boolean>(false);
+  const [addresses, setAddresses] = useState<IAddress[] | []>(
+    cachedAddress || []
+  );
+  const [selectedAdd, setSelectedAdd] = useState<IAddress | null>(null);
+  const { mutateAsync: addToCart } = useAddManyToCart();
+
+  const { mutateAsync: addAddress, isLoading: isAddressAddingLoading } =
+    useAddNewAddress();
+  const { mutateAsync: updateAddress, isLoading: isAddressUpdateLoading } =
+    useUpdateUserAddress();
+  const { mutateAsync: deleteAddress, isLoading: isAddressDeleteLoading } =
+    useDeleteAddress();
+  const { refetch: refetchUserCart } = useFetchUserCart(user?._id);
+  const { mutateAsync: createNewOrder } = useNewOrder();
+  const { mutateAsync: createPaymentIntent } = useCreatePaymentIntent();
+
+  const [cartItems, setCartItems] = useState<ICart[] | undefined>(undefined);
+  const cartAdditionDone = useRef<boolean>(false);
+  const orderGenerationDone = useRef<boolean>(false);
+  const paymentIntentGenerationDone = useRef<boolean>(false);
   const [radioCheck, setRadioCheck] = useState<string | undefined | null>(null);
   const [edit, setEdit] = useState<{ status: boolean; addressId: string }>({
     status: false,
     addressId: "",
   });
+  const [orderSummary, setOrderSummary] = useState<{
+    subtotal: number;
+    tax: number;
+    shipping: number;
+    total: number;
+  } | null>(null);
+  const [currentOrder, setCurrentOrder] = useState<IOrder | undefined>(
+    undefined
+  );
+  const [paymentInit, setPaymentInit] = useState<IPayment | undefined>(
+    undefined
+  );
   const [formVisible, setFormVisible] = useState<boolean>(false);
   const [addressForm, setAddressForm] = useState<{
     street: string;
@@ -62,123 +79,106 @@ const CheckOut = () => {
     country: string;
   }>({ street: "", city: "", state: "", zipcode: "", country: "" });
 
-  const [loader, setLoader] = useState<boolean>(false);
-
-  const cartItemDiffLsDb = useMemo(() => {
-    if (resetCartItemDiffLsDs || cart.statusDb === "idle") {
-      return [];
+  useEffect(() => {
+    (async () => {
+      if (lsCart.length > 0) {
+        await addToCart(
+          { userId: user?._id, items: lsCart },
+          {
+            onSuccess: () => {
+              queryClient.invalidateQueries(["cart", user?._id]);
+              localStorage.setItem("ecommerceCart", "[]");
+            },
+          }
+        );
+      }
+    })().then(async () => {
+      await refetchUserCart().then((data) => setCartItems(data.data?.response));
+    });
+    // }
+  }, [addToCart, lsCart.length, user?._id]);
+  useEffect(() => {
+    if (cartItems) {
+      setOrderSummary(getOrderSummary(cartItems));
     }
-    if (cart.statusDb === "success" && cart.statusLs === "success") {
-      return calcCartItemDiffLsDs(
-        cart.cartItemsLs,
-        cart.cartItemsDb,
-        user.user?._id
-      );
-    } else {
-      return [];
-    }
-  }, [
-    cart.cartItemsDb,
-    cart.cartItemsLs,
-    resetCartItemDiffLsDs,
-    cart.statusDb,
-    cart.statusLs,
-    user.user?._id,
-  ]);
-
-  const cartItemQuantityDiffLsDs = useMemo(() => {
-    if (resetCartItemQuantityDiffLsDs || cart.statusDb === "idle") {
-      return [];
-    }
-    if (cart.statusDb === "success") {
-      return calcCartItemQuantityDiffLsDs(
-        cart.cartItemsLs,
-        cart.cartItemsDb,
-        user.user?._id
-      );
-    } else {
-      return [];
-    }
-  }, [
-    cart.cartItemsDb,
-    cart.cartItemsLs,
-    cart.statusDb,
-    resetCartItemQuantityDiffLsDs,
-    user.user?._id,
-  ]);
+  }, [cartItems]);
 
   useEffect(() => {
-    if (user.status === "success") {
-      dispatch(getCartFromDb(user.user?._id));
+    if (
+      !orderGenerationDone.current &&
+      cartItems &&
+      orderSummary &&
+      selectedAdd
+    ) {
+      const cartIdArr: string[] | undefined = cartItems.map(
+        (item) => item._id || ""
+      );
+      const productsTobeOrdered = cartItems.map((item) => ({
+        product: item.product,
+        quantity: item.quantity,
+        price: item.product.price * item.quantity,
+      }));
+      const orderDetail: IOrder = {
+        products: productsTobeOrdered,
+        address: selectedAdd,
+        ...orderSummary,
+      };
+      (async () =>
+        await createNewOrder({
+          userId: user?._id,
+          cartIdArr,
+          orderDetail,
+        }))().then(
+        (data) =>
+          data.response &&
+          setCurrentOrder(data.response.newOrderWithProductsDetail)
+      );
+      orderGenerationDone.current = true;
     }
-  }, [dispatch, user.status, user.user?._id]);
-  useEffect(() => {
-    dispatch(
-      setCartItemLs(
-        getFullCartItemsFromLs(data.products, cart.cartItemsDb, user.user?._id)
-      )
-    );
   }, [
-    dispatch,
-    data.products,
-    cart.cartItemsDb,
-    cart.statusDb,
-    user.user?._id,
+    cartAdditionDone,
+    cartItems,
+    orderSummary,
+    selectedAdd,
+    user?._id,
+    createNewOrder,
   ]);
 
   useEffect(() => {
     if (
-      (cart.statusItemSync === "success" &&
-        cart.statusItemQuantitySync === "success") ||
-      !(getCartItems().length > cart.cartItemsDb.length)
+      orderGenerationDone.current &&
+      currentOrder &&
+      !paymentIntentGenerationDone.current
     ) {
-      dispatch(setCartItemLs(cart.cartItemsDb));
+      (async () =>
+        createPaymentIntent({
+          userId: user?._id,
+          orderId: currentOrder._id,
+          amount: currentOrder.total,
+        }))().then((data) => setPaymentInit(data.response));
+      paymentIntentGenerationDone.current = true;
     }
   }, [
-    cart.cartItemsDb,
-    cart.statusItemSync,
-    cart.statusItemQuantitySync,
-    dispatch,
+    createPaymentIntent,
+    user?._id,
+    orderGenerationDone,
+    paymentIntentGenerationDone,
+    currentOrder,
   ]);
-  useEffect(() => {
-    if (
-      user.status === "success" &&
-      cartItemQuantityDiffLsDs.length > 0 &&
-      !calledForCartQuantitySync.current
-    ) {
-      dispatch(
-        syncLsCartQuantityToDb({
-          userId: user.user?._id,
-          cartArray: cartItemQuantityDiffLsDs,
-        })
-      );
-      calledForCartQuantitySync.current = true;
-      setResetCartItemQuantityDiffLsDs(true);
-    }
-  }, [cartItemQuantityDiffLsDs, dispatch, user.status, user.user?._id]);
 
   useEffect(() => {
-    if (
-      user.status === "success" &&
-      cartItemDiffLsDb.length > 0 &&
-      !calledForCartSync.current
-    ) {
-      dispatch(
-        syncLsCartToDb({
-          userId: user.user?._id,
-          cartArray: cartItemDiffLsDb,
-        })
+    if (!cachedAddress && addresses.length === 0 && user?._id) {
+      refetch().then(
+        (res) => res.data?.response && setAddresses(res.data?.response)
       );
-      calledForCartSync.current = true;
-      setResetCartItemDiffLsDs(true);
     }
-  }, [dispatch, user.status, user.user?._id, cartItemDiffLsDb]);
+  }, [addresses.length, refetch, user?._id]);
 
   const handleEdit = (addressId: string) => {
     setEdit({ status: true, addressId });
     setFormVisible(true);
     setAddressForm((prev) => {
-      const matchAddress = addresses.find(
+      const matchAddress = addresses?.find(
         (address) => address._id === addressId
       );
       if (matchAddress) {
@@ -198,23 +198,41 @@ const CheckOut = () => {
   const handleAddressDetail = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAddressForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoader(true);
     if (edit.status) {
-      dispatch(
-        updateUserAddress({
-          userId: user.user?._id,
-          addressDetails: { ...addressForm, _id: edit.addressId },
-        })
+      await updateAddress(
+        { userId: user?._id, data: { ...addressForm, _id: edit.addressId } },
+        {
+          onSuccess: (data) => {
+            if (data.response) {
+              const res = data.response;
+              setAddresses((prev) => {
+                return prev.map((oldAdd) => {
+                  if (oldAdd._id === res._id) {
+                    return res;
+                  }
+                  return oldAdd;
+                });
+              });
+            }
+          },
+        }
       );
     } else {
-      dispatch(
-        addNewAddress({ userId: user.user?._id, addressDetail: addressForm })
+      await addAddress(
+        { userId: user?._id, data: addressForm },
+        {
+          onSuccess: (data) => {
+            if (data.response) {
+              const newAddress = [data.response];
+              setAddresses((prev) => [...prev, ...newAddress]);
+            }
+          },
+        }
       );
     }
 
-    setLoader(false);
     setFormVisible(false);
     setEdit({ status: false, addressId: "" });
     setAddressForm({
@@ -225,55 +243,50 @@ const CheckOut = () => {
       country: "",
     });
   };
-  const handleDelete = (addressId: string | undefined) => {
-    dispatch(deleteUserAddress({ userId: user.user?._id, addressId }));
+  const handleDelete = async (addressId: string) => {
+    await deleteAddress(
+      { userId: user?._id, addressId },
+      {
+        onSuccess: (data) => {
+          if (data.response) {
+            const res = data.response;
+            setAddresses((prev) => {
+              const idxToBeDeleted = prev.findIndex(
+                (add) => add._id === res._id
+              );
+              if (idxToBeDeleted !== -1) {
+                prev.splice(idxToBeDeleted);
+              }
+              return prev;
+            });
+          }
+        },
+      }
+    );
   };
   useEffect(() => {
-    dispatch(fetchUserAddress(user.user?._id));
-  }, [dispatch, user.user?._id]);
-
-  useEffect(() => {
-    dispatch(getUserPendingOrder(user.user?._id));
-  }, [dispatch, user.user?._id]);
-
-  useEffect(() => {
-    const CurrentOrderProducts = getOrderProducts(cart.cartItemsDb);
-    const compareOrder = getComparedCurrentOrderWithPending(
-      order.pendingOrders,
-      CurrentOrderProducts
+    if (radioCheck) {
+      const currentAddress = addresses.find((add) => add._id === radioCheck);
+      currentAddress && setSelectedAdd(currentAddress);
+    }
+  }, [radioCheck, addresses]);
+  const handleNext = (checkedAddress: string) => {
+    const selectedAddressExists = addresses.find(
+      (add) => add._id === checkedAddress
     );
-    if (compareOrder) {
-      toast.info(
-        "This order is already generated ! select address to Proceed to Payment !"
-      );
+    if (!selectedAddressExists) {
+      toast.info("Please Select address properly !");
     }
-    dispatch(setComparedOrder(compareOrder));
-  }, [dispatch, cart.cartItemsDb, order.pendingOrders]);
-
-  // if comparedOrder is not null and comparedOrderStatus is compared means currently order to be placed is already
-  //generated and assigned to comparedOrder now if clientSecret is null i can call dispatch for generating client secret
-  //using comparedOrder or currentOrder(since setComparedOrder's logic write like that) and so client secret will no longer be null this dispatch will not called again
-  useEffect(() => {
-    if (
-      user.user?._id &&
-      order.comparedOrder &&
-      order.comparedOrderStatus === "compared" &&
-      !payment.clientSecret
-    ) {
-      dispatch(
-        getExistingPaymentIntent({
-          userId: user.user._id,
-          orderId: order.comparedOrder._id,
-        })
-      );
+    queryClient.setQueryData(
+      ["selectedAddress", user?._id],
+      selectedAddressExists
+    );
+    queryClient.invalidateQueries(["selectedAddress", user?._id]);
+    if (!paymentInit) {
+      toast.info("Payment Intent is not present !");
     }
-  }, [
-    dispatch,
-    order.comparedOrder,
-    order.comparedOrderStatus,
-    payment.clientSecret,
-    user.user?._id,
-  ]);
+    paymentInit && navigate("/order");
+  };
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5] flex justify-center items-center">
@@ -286,14 +299,13 @@ const CheckOut = () => {
           >
             <h2 className="text-sm my-4">Select Address</h2>
             <div className="w-[95%] flex flex-col  gap-2 min-h-[33rem] md:min-h-[15rem] max-h-[25rem] overflow-y-auto">
-              {user.status !== "success" && (
+              {!user && (
                 <div className="flex justify-center items-center p-5">
                   Login first !
                 </div>
               )}
-              {fetchedStatus === "pending" && <Loader />}
-              {user.status === "success" &&
-                fetchedStatus === "success" &&
+              {isAddressLoading && <Loader />}
+              {user &&
                 addresses?.map((address) => (
                   <div
                     key={address._id}
@@ -343,7 +355,7 @@ const CheckOut = () => {
                     </button>
                   </div>
                 ))}
-              {user.status === "success" && addresses.length === 0 && (
+              {user && addresses?.length === 0 && (
                 <div className="flex justify-center items-center p-5">
                   No Address Saved !
                 </div>
@@ -353,10 +365,10 @@ const CheckOut = () => {
               <div className="w-[25%] h-0.5 bg-slate-300"></div>
               <div className=" relative ">
                 <button
-                  disabled={user.user?._id ? false : true}
+                  disabled={user?._id ? false : true}
                   onClick={() => setFormVisible(true)}
                   className={`w-4 h-4 cursor-pointer transition-all ${
-                    user.user?._id ? "active:scale-90" : ""
+                    user?._id ? "active:scale-90" : ""
                   } bg-black flex justify-center items-center pb-1 rounded-full text-white mx-2`}
                 >
                   +
@@ -374,12 +386,12 @@ const CheckOut = () => {
               >
                 Back
               </Link>
-              <Link
-                className="addToCart w-1/2  px-3 h-10 bg-black rounded-sm text-white flex justify-center items-center transition-all hover:scale-105 active:scale-100"
-                to={radioCheck ? `/order/${radioCheck}` : "/checkout"}
+              <div
+                className="addToCart w-1/2 cursor-pointer px-3 h-10 bg-black rounded-sm text-white flex justify-center items-center transition-all hover:scale-105 active:scale-100"
+                onClick={() => radioCheck && handleNext(radioCheck)}
               >
                 Next
-              </Link>
+              </div>
             </div>
           </div>
 
@@ -456,10 +468,16 @@ const CheckOut = () => {
                 <button
                   type="submit"
                   className={`bg-[#D8DDE2] transition-all  ${
-                    loader ? "animate-pulse" : ""
+                    isAddressUpdateLoading ||
+                    isAddressDeleteLoading ||
+                    isAddressAddingLoading
+                      ? "animate-pulse"
+                      : ""
                   } active:scale-95 hover:bg-[#B6BCC2] hover:font-semibold cursor-pointer p-2.5 rounded-md`}
                 >
-                  {loader ? (
+                  {isAddressUpdateLoading ||
+                  isAddressDeleteLoading ||
+                  isAddressAddingLoading ? (
                     <div className="flex items-end justify-center gap-1 py-2">
                       <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"></div>
                       <div

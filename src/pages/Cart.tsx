@@ -1,83 +1,156 @@
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../store/Store";
 import Loader from "../components/Loader";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { removeItem } from "../store/cart/cartApi";
+import { useEffect, useRef, useState } from "react";
 import {
-  addToCartLs,
+  getCartItems,
   updateCartItem,
 } from "../utilityFunctions/localStorageCRUD";
-import { getFullCartItemsFromLs } from "../utilityFunctions/localStorageReduxOperation";
-import { setCartItemLs } from "../store/cart/cartSlice";
-import { getOrderSummary } from "../utilityFunctions/getOrderSummary";
 import { MdCurrencyRupee } from "react-icons/md";
+import { ICart, IUser } from "../types/types";
+import { useQueryClient } from "react-query";
+import { getOrderSummary } from "../utilityFunctions/getOrderSummary";
+import { Link } from "react-router-dom";
+import {
+  useDecreaseQuantity,
+  useFetchUserCart,
+  useIncreaseQuantity,
+  useRemoveCartItem,
+} from "../api/api";
 
 function Cart() {
-  const navigate = useNavigate();
-  const params = useParams();
-  const { productId } = params;
-  const dispatch = useDispatch<AppDispatch>();
-  const user = useSelector((state: RootState) => state.user);
-  const data = useSelector((state: RootState) => state.product);
-  const { cartItemsLs, cartItemsDb } = useSelector(
-    (state: RootState) => state.cart
+  const queryClient = useQueryClient();
+  const user: IUser | undefined = queryClient.getQueryData("user");
+  const [cartModified] = useState<boolean>(false);
+  const [lsCart] = useState<ICart[] | []>(() => getCartItems("ecommerceCart"));
+  const [cachedCart] = useState<ICart[] | undefined>(() =>
+    queryClient.getQueryData(["cart", user?._id])
   );
+  const [cartItems, setCartItems] = useState<ICart[] | undefined>(undefined);
 
+  const refInitCart = useRef<boolean>(false);
+
+  const { refetch: refetchCart } = useFetchUserCart(user?._id);
+  const { mutateAsync: incQuantMutate } = useIncreaseQuantity();
+  const { mutateAsync: decQuantMutate } = useDecreaseQuantity();
+  const { mutateAsync: removeCartItem, isLoading: isRemoveCartItemLoading } =
+    useRemoveCartItem();
+
+  useEffect(() => {
+    if (!refInitCart.current) {
+      refInitCart.current = true;
+      setCartItems(() =>
+        cachedCart ? [...lsCart, ...cachedCart] : [...lsCart]
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user && (!cachedCart || cachedCart.length === 0)) {
+      refetchCart().then((res) => {
+        const resp = res.data;
+        resp?.response && setCartItems([...lsCart, ...resp.response]);
+      });
+    }
+  }, [cachedCart, refetchCart]);
   const [orderSummary, setOrderSummary] = useState<{
     subtotal: number;
     tax: number;
     shipping: number;
     total: number;
   } | null>(null);
-
   useEffect(() => {
-    setOrderSummary(getOrderSummary(cartItemsLs));
-  }, [cartItemsLs]);
-
-  useEffect(() => {
-    if (productId && user.status === "success") {
-      addToCartLs(user.user?._id, productId);
-      navigate("/cart");
+    cartItems && setOrderSummary(getOrderSummary(cartItems));
+  }, [cartModified]);
+  const itemLsOperation = async (cartItem: ICart, operation: string) => {
+    const checkLocalExists = lsCart.find(
+      (lsItem) =>
+        lsItem.product._id === cartItem.product._id &&
+        lsItem.user === cartItem.user
+    );
+    if (checkLocalExists) {
+      const updatedLs = updateCartItem(cartItem, operation);
+      setCartItems((prev) => {
+        const latestDbCartItems = prev?.filter((item) => item._id);
+        return cachedCart
+          ? [...updatedLs, ...(latestDbCartItems || [])]
+          : [...updatedLs];
+      });
     }
-    dispatch(
-      setCartItemLs(
-        getFullCartItemsFromLs(data.products, cartItemsDb, user.user?._id)
-      )
-    );
-  }, [
-    dispatch,
-    productId,
-    user.user?._id,
-    navigate,
-    user.status,
-    data.products,
-    cartItemsDb,
-  ]);
+    if (operation === "increase" && cartItem._id) {
+      await incQuantMutate(
+        {
+          userId: cartItem.user,
+          cartId: cartItem._id,
+        },
+        {
+          onSuccess: (data) => {
+            if (data.response) {
+              const res = data.response;
+              const updatedCart =
+                cachedCart?.map((item) => {
+                  if (item._id === res._id) {
+                    return { ...item, quantity: res.quantity };
+                  }
+                  return item;
+                }) || [];
+              setCartItems((prev) => {
+                const latestLsItems = prev?.filter((item) => !item._id);
+                return [...(latestLsItems || []), ...updatedCart];
+              });
+            }
+          },
+        }
+      );
+    }
 
-  // Update cart.....
-  const itemLsOperation = (
-    userId: string | undefined,
-    productId: string,
-    operation: string
-  ) => {
-    updateCartItem(productId, userId, operation);
-    dispatch(
-      setCartItemLs(
-        getFullCartItemsFromLs(data.products, cartItemsDb, user.user?._id)
-      )
-    );
+    if (operation === "decrease" && cartItem._id) {
+      await decQuantMutate(
+        {
+          userId: cartItem.user,
+          cartId: cartItem._id,
+        },
+        {
+          onSuccess: (data) => {
+            if (data.response) {
+              const res = data.response;
+              const updatedCart =
+                cachedCart?.map((item) => {
+                  if (item._id === res._id) {
+                    return { ...item, quantity: res.quantity };
+                  }
+                  return item;
+                }) || [];
+              setCartItems((prev) => {
+                const latestLsItems = prev?.filter((item) => !item._id);
+                return [...(latestLsItems || []), ...updatedCart];
+              });
+            }
+          },
+        }
+      );
+    }
+    if (operation === "remove" && cartItem._id) {
+      await removeCartItem({
+        userId: cartItem.user,
+        cartId: cartItem._id,
+      }).then((data) => {
+        if (data.response) {
+          setCartItems(() => {
+            const latestLs = getCartItems("ecommerceCart");
+            const latestDb: ICart[] | undefined = queryClient.getQueryData([
+              "cart",
+              user?._id,
+            ]);
+            return [...latestLs, ...(latestDb || [])];
+          });
+        }
+      });
+    }
   };
-  const handleCheckOut = () => {
-    navigate("/checkout");
-  };
-
   return (
     <main className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">
-        {data.productsStatus === "error" && <div className="w-full h-96"></div>}
-        {data.productsStatus === "success" ? (
-          cartItemsLs.length > 0 ? (
+        {cartItems ? (
+          cartItems.length > 0 ? (
             <section className="w-full">
               <div className="path px-8 flex gap-3 py-4"></div>
               <div className="w-[375px] mx-auto border-2 lg:w-full lg:h-[656px] flex justify-center items-center">
@@ -91,9 +164,9 @@ function Cart() {
                         id="cartContainer"
                         className="overflow-y-auto h-[80%] flex flex-col gap-3"
                       >
-                        {cartItemsLs.map((item) => (
+                        {cartItems.map((item) => (
                           <div
-                            key={item.product._id}
+                            key={item._id || item.product._id}
                             id="card"
                             className="w-full flex flex-col shadow-md lg:flex-row gap-3 lg:gap-6 justify-center items-center p-2"
                           >
@@ -116,11 +189,7 @@ function Cart() {
                             <div className="flex gap-3">
                               <button
                                 onClick={() =>
-                                  itemLsOperation(
-                                    user.user?._id,
-                                    item.product._id,
-                                    "decrease"
-                                  )
+                                  itemLsOperation(item, "decrease")
                                 }
                                 className=" text-xl transition-all hover:font-bold hover:scale-125 active:scale-100"
                               >
@@ -131,11 +200,7 @@ function Cart() {
                               </div>
                               <button
                                 onClick={() =>
-                                  itemLsOperation(
-                                    user.user?._id,
-                                    item.product._id,
-                                    "increase"
-                                  )
+                                  itemLsOperation(item, "increase")
                                 }
                                 className=" text-xl transition-all hover:font-bold hover:scale-125 active:scale-100"
                               >
@@ -146,19 +211,8 @@ function Cart() {
                             <div
                               onClick={() => {
                                 {
-                                  itemLsOperation(
-                                    user.user?._id,
-                                    item.product._id,
-                                    "remove"
-                                  );
-                                  if (item._id) {
-                                    dispatch(
-                                      removeItem({
-                                        userId: user.user?._id,
-                                        cartId: item._id,
-                                      })
-                                    );
-                                  }
+                                  !isRemoveCartItemLoading &&
+                                    itemLsOperation(item, "remove");
                                 }
                               }}
                               className=" text-red-600 cursor-pointer rotate-45 text-xl transition-all hover:font-bold hover:scale-125 active:scale-100"
@@ -255,12 +309,12 @@ function Cart() {
                         </span>
                       </div>
 
-                      <div
-                        onClick={() => handleCheckOut()}
+                      <Link
+                        to={"/checkout"}
                         className="w-[80%] h-10 rounded-sm self-center cursor-pointer bg-black text-white flex justify-center items-center transition-all hover:scale-105 active:scale-100"
                       >
                         CheckOut
-                      </div>
+                      </Link>
                     </div>
                   </div>
                 </div>

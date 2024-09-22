@@ -1,6 +1,6 @@
-import { fullCartItemType } from "../types/types";
+import { ICart } from "../types/types";
 
-export const getOrderSummary = (products: fullCartItemType[]) => {
+export const getOrderSummary = (products: ICart[]) => {
   if (products.length > 0) {
     const subtotal = products.reduce(
       (acc, el) => acc + el.product.price * (el.quantity || 1),

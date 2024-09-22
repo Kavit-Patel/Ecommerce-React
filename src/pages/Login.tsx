@@ -1,43 +1,33 @@
-import { useEffect, useState } from "react";
-
+import { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { useDispatch } from "react-redux";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
-import { AppDispatch } from "../store/Store";
-import { fetchAsyncUser } from "../store/user/userApi";
-import { setVanillaUser } from "../store/user/userSlice";
+import { useLogin } from "../api/api";
+import { useQueryClient } from "react-query";
 
 const Login = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
+  const queryClient = useQueryClient();
+  const { mutateAsync: login, isLoading } = useLogin();
   const [userDetails, setUserDetails] = useState<{
     email: string;
     password: string;
   }>({ email: "", password: "" });
   const [seePassword, setSeePassword] = useState<boolean>(false);
-  const [loader, setLoader] = useState<boolean>(false);
   const handleUserDetails = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserDetails((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoader(true);
-    await dispatch(fetchAsyncUser(userDetails));
-    setLoader(false);
+    await login(userDetails, {
+      onSuccess: (data) => {
+        if (data.response) {
+          queryClient.setQueryData("user", data.response);
+          queryClient.invalidateQueries("user");
+        }
+      },
+    }).then(() => navigate("/"));
   };
-
-  //if redirected from vanilla-ecommerce front end logic
-  const [searchParams] = useSearchParams();
-  const queryCart = searchParams.get("queryCart");
-  useEffect(() => {
-    if (queryCart) {
-      const vanillaCart = JSON.parse(decodeURIComponent(queryCart));
-      dispatch(setVanillaUser({ status: true, data: vanillaCart }));
-      navigate("/login");
-    }
-  }, [dispatch, queryCart, navigate]);
-  //venilla-ecommerce redirection logic ends
   return (
     <div className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5] flex justify-center items-center">
@@ -101,12 +91,12 @@ const Login = () => {
               type="submit"
               className={`bg-[#D8DDE2] transition-all 
                   ${
-                    loader ? "animate-pulse" : ""
+                    isLoading ? "animate-pulse" : ""
                   } active:scale-95 hover:bg-[#B6BCC2] hover:font-semibold cursor-pointer
                   
                p-2.5 rounded-md`}
             >
-              {loader ? (
+              {isLoading ? (
                 <div className="flex items-end justify-center gap-1 py-2">
                   <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"></div>
                   <div

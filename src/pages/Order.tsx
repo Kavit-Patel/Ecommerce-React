@@ -1,39 +1,41 @@
-import { useLocation, useNavigate, useParams } from "react-router-dom";
 import OrderSteps from "../components/OrderSteps";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../store/Store";
-
-import React, { useEffect, useMemo, useState } from "react";
-
+import React, { useEffect, useState } from "react";
 import { showAddress } from "../utilityFunctions/showAddress";
 import { getOrderSummary } from "../utilityFunctions/getOrderSummary";
 import { MdCurrencyRupee } from "react-icons/md";
-import { addNewOrder, getSingleUserOrder } from "../store/order/orderApi";
-import { getOrderProducts } from "../utilityFunctions/getOrderProducts";
-import { getOrderCartIdArr } from "../utilityFunctions/getOrderCartIdArr";
 import Loader from "../components/Loader";
 import Payment from "../components/Payment";
-import {
-  createPaymentIntent,
-  getExistingPaymentIntent,
-} from "../store/payment/paymentApi";
-import { fetchUserAddress } from "../store/address/addressApi";
-import { setCartItemLs } from "../store/cart/cartSlice";
-import { getCartFromDb } from "../store/cart/cartApi";
-import { setVanillaUser } from "../store/user/userSlice";
+import { useFetchUserCart } from "../api/api";
+import { IAddress, ICart, IOrder, IPayment, IUser } from "../types/types";
+import { useQueryClient } from "react-query";
 
 const Order = () => {
-  const params = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { addressId } = params;
-  const dispatch = useDispatch<AppDispatch>();
-  const { addresses } = useSelector((state: RootState) => state.address);
-  const data = useSelector((state: RootState) => state.product);
-  const cart = useSelector((state: RootState) => state.cart);
-  const user = useSelector((state: RootState) => state.user);
-  const order = useSelector((state: RootState) => state.order);
-  const payment = useSelector((state: RootState) => state.payment);
+  const queryClient = useQueryClient();
+  const user: IUser | undefined = queryClient.getQueryData("user");
+  const cachedPaymentInit: IPayment | undefined = queryClient.getQueryData([
+    "paymentInit",
+    user?._id,
+  ]);
+  const cachedCurrentOrder: IOrder | undefined = queryClient.getQueryData([
+    "currentOrder",
+    user?._id,
+  ]);
+  const selectedAddressFromCache: IAddress | undefined =
+    queryClient.getQueryData(["selectedAddress", user?._id]);
+
+  const { isError: isCartFetchingError, refetch: refetchCart } =
+    useFetchUserCart(user?._id);
+  const orderedCartProducts: ICart[] | undefined =
+    user &&
+    cachedCurrentOrder?.products.map((item) => ({
+      user: user._id,
+      product: item.product,
+      quantity: item.quantity,
+    }));
+  const [cartItems, setCartItems] = useState<ICart[] | undefined>(
+    orderedCartProducts
+  );
+  const [paymentIntent, setPaymentIntent] = useState<IPayment | null>(null);
   const [orderSummary, setOrderSummary] = useState<{
     subtotal: number;
     tax: number;
@@ -46,113 +48,24 @@ const Order = () => {
     crypto: boolean;
   }>({ creditCart: true, crypto: false });
 
-  const address = useMemo(() => {
-    const myAddress = addresses.find((add) => add._id === addressId);
-    if (myAddress) {
-      return showAddress(myAddress);
-    }
-    if (!addressId && order.currentOrder && order.currentOrder.address) {
-      const myAddress = addresses.find(
-        (add) => add._id === order.currentOrder?.address
+  useEffect(() => {
+    if (user?._id && !cartItems) {
+      refetchCart().then(
+        (res) => res.data?.response && setCartItems(res.data.response)
       );
-      return showAddress(myAddress);
     }
-    return "no address";
-  }, [addressId, addresses, order.currentOrder]);
+  }, [refetchCart, user?._id, cartItems]);
 
   useEffect(() => {
-    const orderProducts = getOrderProducts(cart.cartItemsDb);
-    if (
-      orderProducts &&
-      orderProducts.length > 0 &&
-      user.user?._id &&
-      addressId &&
-      orderSummary &&
-      order.fetchedPendingOrderStatus === "success" &&
-      order.comparedOrderStatus === "compared"
-    ) {
-      if (!order.comparedOrder) {
-        dispatch(
-          addNewOrder({
-            userId: user.user._id,
-            cartIdArr: getOrderCartIdArr(cart.cartItemsDb),
-            orderDetail: {
-              products: orderProducts,
-              address: addressId,
-              ...orderSummary,
-            },
-          })
-        );
-      }
-      navigate("/order");
+    if (cachedPaymentInit && !paymentIntent) {
+      setPaymentIntent(cachedPaymentInit);
     }
-  }, [
-    addressId,
-    dispatch,
-    data.products,
-    user.user?._id,
-    orderSummary,
-    navigate,
-    cart.cartItemsDb,
-    order.comparedOrder,
-    order.comparedOrderStatus,
-    order.fetchedPendingOrderStatus,
-  ]);
+  }, [cachedPaymentInit, paymentIntent]);
   useEffect(() => {
-    if (user.user?._id && order.createdStatus === "success") {
-      dispatch(getCartFromDb(user.user._id)); //after order generation db cart item state needs to be latest(empty)
-      dispatch(setCartItemLs([])); // after order generation ls cart item state needs to be emptied
-      dispatch(setVanillaUser({ status: false, data: null })); //after order generation vanilla user status needs to be false as well as vanilla user cart needs to be emptied
+    if (cartItems) {
+      setOrderSummary(getOrderSummary(cartItems));
     }
-  }, [dispatch, order.createdStatus, user.user?._id]);
-
-  useEffect(() => {
-    setOrderSummary(getOrderSummary(cart.cartItemsDb));
-  }, [cart.cartItemsDb]);
-  useEffect(() => {
-    if (
-      !payment.clientSecret &&
-      order.comparedOrderStatus === "compared" &&
-      order.createdStatus === "success" &&
-      order.currentOrder &&
-      order.currentOrder._id &&
-      order.currentOrder.total &&
-      payment.fetchedStatus !== "success"
-    ) {
-      dispatch(
-        createPaymentIntent({
-          userId: user.user?._id,
-          orderId: order.currentOrder._id,
-          amount: Number(order.currentOrder.total),
-        })
-      );
-    }
-  }, [
-    order.comparedOrderStatus,
-    order.createdStatus,
-    order.currentOrder,
-    dispatch,
-    payment.clientSecret,
-    user.user?._id,
-    payment.fetchedStatus,
-  ]);
-  useEffect(() => {
-    if (location.state?.orderId) {
-      dispatch(
-        getExistingPaymentIntent({
-          userId: user.user?._id,
-          orderId: location.state.orderId,
-        })
-      );
-      dispatch(
-        getSingleUserOrder({
-          userId: user.user?._id,
-          orderId: location.state.orderId,
-        })
-      );
-      dispatch(fetchUserAddress(user.user?._id));
-    }
-  }, [dispatch, location.state?.orderId, user.user?._id]);
+  }, [cartItems]);
   return (
     <main className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">
@@ -166,8 +79,14 @@ const Order = () => {
                   className=" overflow-y-auto max-h-96 flex flex-col gap-3"
                 >
                   <h2 className="text-sm font-semibold mb-2">Summary</h2>
-                  {order.createdStatus === "pending" && <Loader />}
-                  {order.currentOrder?.products.map((item) => (
+                  {!cartItems && <Loader />}
+                  {isCartFetchingError && (
+                    <div className="flex justify-center items-center">
+                      {" "}
+                      Error cartAddition / cartAdditionResponse{" "}
+                    </div>
+                  )}
+                  {cartItems?.map((item) => (
                     <div
                       key={item.product._id}
                       id="card"
@@ -192,21 +111,23 @@ const Order = () => {
               </div>
               <div className=" text-xs px-4 flex flex-col gap-2">
                 <p>Address</p>
-                <p>
-                  {address.split("\n").map((line, index, arr) => (
-                    <React.Fragment key={index}>
-                      {line}
-                      {arr.length - 1 && <br />}
-                    </React.Fragment>
-                  ))}
+                <p className="pb-2">
+                  {showAddress(selectedAddressFromCache)
+                    ?.split("\n")
+                    .map((line, index, arr) => (
+                      <React.Fragment key={index}>
+                        {line}
+                        {arr.length - 1 && <br />}
+                      </React.Fragment>
+                    ))}
                 </p>
                 <div className="flex justify-between font-semibold">
                   <span>Subtotal</span>
                   <span className="subtotal">
-                    {order.currentOrder ? (
+                    {orderSummary ? (
                       <span className="flex items-center">
                         <MdCurrencyRupee />
-                        <span>{order.currentOrder.subtotal}</span>
+                        <span>{orderSummary.subtotal}</span>
                       </span>
                     ) : null}
                   </span>
@@ -214,10 +135,10 @@ const Order = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-700">Estimated Tax</span>
                   <span className="tax font-semibold">
-                    {order.currentOrder ? (
+                    {orderSummary ? (
                       <span className="flex items-center">
                         <MdCurrencyRupee />
-                        <span>{order.currentOrder.tax}</span>
+                        <span>{orderSummary.tax}</span>
                       </span>
                     ) : null}
                   </span>
@@ -227,10 +148,10 @@ const Order = () => {
                     Estimated shipping & Handling
                   </span>
                   <span className="shipping font-semibold">
-                    {order.currentOrder ? (
+                    {orderSummary ? (
                       <span className="flex items-center">
                         <MdCurrencyRupee />
-                        <span>{order.currentOrder.shipping}</span>
+                        <span>{orderSummary.shipping}</span>
                       </span>
                     ) : null}
                   </span>
@@ -238,10 +159,10 @@ const Order = () => {
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
                   <span className="total">
-                    {order.currentOrder ? (
+                    {orderSummary ? (
                       <span className="flex items-center">
                         <MdCurrencyRupee />
-                        <span>{order.currentOrder.total}</span>
+                        <span>{orderSummary.total}</span>
                       </span>
                     ) : null}
                   </span>
@@ -277,7 +198,7 @@ const Order = () => {
                 </span>
               </div>
               <div className={`${paymentMode.creditCart ? "block" : "hidden"}`}>
-                {payment.clientSecret ? <Payment /> : <Loader />}
+                {paymentIntent ? <Payment /> : <Loader />}
               </div>
               <div className={`${paymentMode.crypto ? "block" : "hidden"}`}>
                 <div>This Method is under maintainance..</div>

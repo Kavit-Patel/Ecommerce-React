@@ -5,23 +5,30 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../store/Store";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import Loader from "./Loader";
-import { paymentSuccessed } from "../store/payment/paymentApi";
-// import { useState } from "react";
+import { IOrder, IPayment, IUser } from "../types/types";
+import { useQueryClient } from "react-query";
+import { usePaymentSuccessed } from "../api/api";
 
 const stripePromise = loadStripe(`${import.meta.env.VITE_STRIPE_PUBLISH_KEY}`);
 
 const PaymentForm = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
-  const { currentOrder } = useSelector((state: RootState) => state.order);
-  const { paymentObject } = useSelector((state: RootState) => state.payment);
-  const { user } = useSelector((state: RootState) => state.user);
+  const queryClient = useQueryClient();
+  const cachedUser: IUser | undefined = queryClient.getQueryData("user");
+  const cachedCurrentOrder: IOrder | undefined = queryClient.getQueryData([
+    "currentOrder",
+    cachedUser?._id,
+  ]);
+  const cachedPaymentInit: IPayment | undefined = queryClient.getQueryData([
+    "paymentInit",
+    cachedUser?._id,
+  ]);
+
+  const { mutateAsync: mutatePaymentSuccessed } = usePaymentSuccessed();
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const stripe = useStripe();
   const elements = useElements();
@@ -29,7 +36,7 @@ const PaymentForm = () => {
     e.preventDefault();
     if (!stripe || !elements) return;
     setIsProcessing(true);
-    const { paymentIntent, error } = await stripe.confirmPayment({
+    const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: { return_url: window.location.origin },
       redirect: "if_required",
@@ -40,16 +47,23 @@ const PaymentForm = () => {
         error.message || "Something went wrong in payment component"
       );
     }
-    if (paymentIntent.status === "succeeded") {
-      dispatch(
-        paymentSuccessed({
-          userId: user?._id,
-          paymentId: paymentObject?._id,
-          orderId: currentOrder?._id,
-          payMode: "Credit Card",
-        })
-      );
-      navigate("/myorders");
+    if (cachedPaymentInit) {
+      await mutatePaymentSuccessed({
+        userId: cachedUser?._id,
+        paymentId: cachedPaymentInit?._id,
+        orderId: cachedCurrentOrder?._id,
+        payMode: "Credit Card",
+      }).then(() => {
+        queryClient.invalidateQueries(["cart", cachedUser?._id]);
+        queryClient.removeQueries(["address", cachedUser?._id]);
+        queryClient.removeQueries(["cart", cachedUser?._id]);
+        queryClient.removeQueries(["product", cachedUser?._id]);
+        queryClient.removeQueries(["address", cachedUser?._id]);
+        queryClient.removeQueries(["currentOrder", cachedUser?._id]);
+        queryClient.removeQueries(["paymentInit", cachedUser?._id]);
+        queryClient.removeQueries(["paymentSuccess", cachedUser?._id]);
+        navigate("/myorders");
+      });
     }
     setIsProcessing(false);
   };
@@ -88,14 +102,18 @@ const PaymentForm = () => {
 };
 
 const Payment = () => {
-  const payment = useSelector((state: RootState) => state.payment);
+  const queryClient = useQueryClient();
+  const cachedUser: IUser | undefined = queryClient.getQueryData("user");
+  const cachedPaymentInit: IPayment | undefined = queryClient.getQueryData([
+    "paymentInit",
+    cachedUser?._id,
+  ]);
   return (
     <>
-      {(payment.createdStatus === "success" || payment.fetchedStatus) &&
-      payment.clientSecret ? (
+      {cachedPaymentInit && cachedPaymentInit.paymentIntent ? (
         <Elements
           options={{
-            clientSecret: payment.clientSecret,
+            clientSecret: cachedPaymentInit.paymentIntent,
           }}
           stripe={stripePromise}
         >

@@ -1,18 +1,26 @@
-import { useDispatch, useSelector } from "react-redux";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AppDispatch, RootState } from "../store/Store";
 import Loader from "../components/Loader";
 import { ChangeEvent, useEffect, useState } from "react";
-import { getProductsPriceRange } from "../store/product/productSlice";
-import { fetchProducts } from "../store/product/productApi";
 import { MdCurrencyRupee } from "react-icons/md";
+import { useQueryClient } from "react-query";
+import { productsPriceRange } from "../utilityFunctions/getProductPriceRange";
+import { IProduct } from "../types/types";
+import { useFetchProducts } from "../api/api";
 const Products = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
-  const data = useSelector((state: RootState) => state.product);
-  const priceRange = data.productsPriceRange;
-
+  const { isLoading: isProductsLoading, refetch: refetchProducts } =
+    useFetchProducts();
+  const queryClient = useQueryClient();
+  const products: IProduct[] | undefined = queryClient.getQueryData("products");
+  const [priceRange, setPriceRange] = useState<number[]>(
+    productsPriceRange(products)
+  );
+  useEffect(() => {
+    if (products) {
+      setPriceRange(productsPriceRange(products));
+    }
+  }, [products]);
   const [price, setPrice] = useState<{
     min: number;
     max: number;
@@ -32,14 +40,11 @@ const Products = () => {
   };
 
   useEffect(() => {
-    if (data.productsStatus === "idle") {
-      dispatch(fetchProducts()).then(() => dispatch(getProductsPriceRange()));
+    if (!products) {
+      refetchProducts();
       navigate(location.pathname, { state: null });
     }
-    if (data.productsStatus === "success") {
-      dispatch(getProductsPriceRange());
-    }
-  }, [dispatch, data.productsStatus, navigate, location.pathname]);
+  }, [products, navigate, location.pathname, refetchProducts]);
   useEffect(() => {
     setPrice({
       min: priceRange[priceRange.length - 1],
@@ -50,8 +55,8 @@ const Products = () => {
   return (
     <main className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">
-        {data.productsStatus == "loading" && <Loader />}
-        {data.productsStatus === "success" && (
+        {isProductsLoading && <Loader />}
+        {products && (
           <section className="w-full h-[1400px] px-2 md:px-4 lg:px-8">
             <div className="path flex gap-3 py-4 text-gray-500"></div>
             <div className="w-full h-full flex flex-col gap-4 md:gap-0 md:flex-row md:justify-between">
@@ -108,9 +113,6 @@ const Products = () => {
                 <div className="w-full flex flex-col gap-3 mt-6">
                   <select
                     onChange={(e) => handleSort(e)}
-                    // onClick={() =>
-                    //   setVisible((prev) => ({ ...prev, sortBy: !prev.sortBy }))
-                    // }
                     className="w-full py-1 bg-inherit flex justify-between relative price-line-hidden border-b font-semibold"
                   >
                     <option value="">Sort By</option>
@@ -147,7 +149,7 @@ const Products = () => {
                   id="productSection"
                   className="w-full flex flex-wrap justify-center gap-1.5"
                 >
-                  {data.products
+                  {products
                     .filter(
                       (filteredProduct) =>
                         filteredProduct.price <= price.current &&

@@ -1,4 +1,10 @@
-export interface userType {
+export interface IUserDetails {
+  name: string;
+  surname: string;
+  email: string;
+  password: string;
+}
+export interface IUser {
   _id: string;
   name: string;
   surname: string;
@@ -6,49 +12,55 @@ export interface userType {
   password: string;
   isAdmin: boolean;
 }
-
-export interface productType {
+export interface IUserResponse {
+  success: boolean;
+  message: string;
+  response?: IUser;
+}
+export interface IUserLoginDetails {
+  email: string;
+  password: string;
+}
+export interface IProduct {
   _id: string;
   name: string;
   price: number;
   image: string;
   section: string;
 }
-export interface dataType {
-  products: productType[];
-  product: productType | null;
-  productsStatus: "idle" | "loading" | "success" | "error";
-  productStatus: "idle" | "loading" | "success" | "error";
-  productsPriceRange: number[];
+export interface IProductsResponse {
+  success: boolean;
+  message: string;
+  response?: IProduct[];
 }
-export interface fullCartItemType {
+export interface ISingleProductResponse {
+  success: boolean;
+  message: string;
+  response?: IProduct;
+}
+export interface ICartItemLocalStorage {
+  user: string;
+  product: IProduct;
+  quantity: number;
+}
+export interface ICart {
   _id?: string;
-  user: string | userType;
+  user: string;
   quantity: number;
-  product: {
-    _id: string;
-    name: string;
-    price: number;
-    image: string;
-    section: string;
-  };
+  product: IProduct;
 }
-export interface DbCartType {
-  _id?: string;
-  product: string | productType;
-  quantity?: number;
+export interface ICartResponseArr {
+  success: boolean;
+  message: string;
+  response?: ICart[];
 }
-export interface LsCartType {
-  productId: string;
-  user: string | userType;
-  quantity: number;
+export interface ICartResponseSingle {
+  success: boolean;
+  message: string;
+  response?: ICart;
 }
-export interface LsCartTypeVanillaUser {
-  _id: string;
-  user?: string | userType;
-  quantity: number;
-}
-export interface addressType {
+
+export interface IAddress {
   _id?: string;
   user?: string;
   street: string;
@@ -57,33 +69,57 @@ export interface addressType {
   zipcode: string;
   country: string;
 }
-
-export interface productsFieldType {
-  product: productType;
+export interface IAddressFetchedResponse {
+  success: boolean;
+  message: string;
+  response?: IAddress[];
+}
+export interface IAddAddressResponse {
+  success: boolean;
+  message: string;
+  response?: IAddress;
+}
+export interface IProductsTobeOrdered {
+  product: IProduct;
   quantity: number;
   price: number;
 }
-
-export interface paymentType {
+export interface IOrder {
   _id?: string;
-  user: string | userType;
-  order: string | orderType;
-  amount: number;
-  payMode: string;
-  paymentIntent: string;
-}
-
-export interface orderType {
-  _id?: string;
-  user?: string | userType;
-  products: productsFieldType[];
+  user?: string | IUser;
+  products: IProductsTobeOrdered[];
   payment?: {
-    payId: string | paymentType;
+    payId: string | IPayment;
     paymentStatus: string;
   };
-  address: string | addressType;
+  address: string | IAddress;
   subtotal: number;
   tax: number;
   shipping: number;
   total: number;
+  createdAt?: string;
+}
+export interface INewOrderResponse {
+  success: boolean;
+  message: string;
+  response?: { newOrderWithProductsDetail: IOrder; removedCartArray: ICart[] };
+}
+export interface IFetchedOrdersResponse {
+  success: boolean;
+  message: string;
+  response?: IOrder[];
+}
+
+export interface IPayment {
+  _id?: string;
+  user: string | IUser;
+  order: string | IOrder;
+  amount: number;
+  payMode: string;
+  paymentIntent: string;
+}
+export interface IPaymentResponse {
+  success: boolean;
+  message: string;
+  response?: IPayment;
 }

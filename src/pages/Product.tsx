@@ -1,20 +1,64 @@
-import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
-import { AppDispatch, RootState } from "../store/Store";
+import { useNavigate, useParams } from "react-router-dom";
 import Loader from "../components/Loader";
-import { useEffect } from "react";
-import { fetchSingleProduct } from "../store/product/productApi";
 import { Link } from "react-router-dom";
 import { MdCurrencyRupee } from "react-icons/md";
+import { useFetchSingleProduct, useIncreaseQuantity } from "../api/api";
+import { useQueryClient } from "react-query";
+import { ICart, IProduct, IUser } from "../types/types";
+import { useEffect } from "react";
+import { toast } from "react-toastify";
+import { addToCartLs } from "../utilityFunctions/localStorageCRUD";
 
 const Product = () => {
-  const params = useParams();
-  const { productId } = params;
-  const dispatch = useDispatch<AppDispatch>();
-  const data = useSelector((state: RootState) => state.product);
+  const navigate = useNavigate();
+  const { productId } = useParams<{ productId: string }>();
+  const queryClient = useQueryClient();
+  const user: IUser | undefined = queryClient.getQueryData("user");
+  const cachedCart: ICart[] | undefined = queryClient.getQueryData([
+    "cart",
+    user?._id,
+  ]);
+  const { isLoading: isProductLoading, refetch } =
+    useFetchSingleProduct(productId);
+  const product: IProduct | undefined = queryClient.getQueryData([
+    "product",
+    productId,
+  ]);
+  const { mutateAsync: incQuantMutate } = useIncreaseQuantity();
   useEffect(() => {
-    if (productId) dispatch(fetchSingleProduct(productId));
-  }, [dispatch, productId]);
+    if (!product) {
+      refetch();
+    }
+  }, [product, refetch]);
+  const handleAddToCart = (prod: IProduct) => {
+    if (!user?._id) {
+      toast.info("Login to add items to cart !");
+      navigate("/login");
+      return;
+    }
+    const cacheExists = cachedCart?.find(
+      (cachedItem) => cachedItem.product._id === prod._id
+    );
+    if (cacheExists) {
+      incQuantMutate(
+        { userId: cacheExists.user, cartId: cacheExists._id },
+        {
+          onSuccess: (data) => {
+            const updatedCart = cachedCart?.map((cart) => {
+              if (cart._id === data.response?._id) {
+                return { ...cart, quantity: data.response?.quantity };
+              }
+              return cart;
+            });
+            queryClient.setQueryData(["cart", cacheExists.user], updatedCart);
+          },
+        }
+      ).then(() => navigate("/cart"));
+    } else {
+      addToCartLs(user._id, prod);
+      navigate("/cart");
+    }
+  };
   const colors: string[] = [
     "#000000",
     "#781DBC",
@@ -43,40 +87,40 @@ const Product = () => {
       image: "../../images/battery.png",
     },
   ];
+  if (!productId) {
+    return <div>Product ID not found!</div>;
+  }
   return (
     <main className="w-full bg-[#DFDFDF] flex justify-center">
       <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">
-        {data.productStatus === "loading" && <Loader />}
-        {data.product && data.productStatus === "success" && (
+        {isProductLoading && <Loader />}
+        {product && (
           <section>
             <div className="px-8 path flex gap-3 py-3 text-gray-500"></div>
             <div className="w-full h-[896px] py-8 md:py-0 flex flex-col md:flex-row justify-center items-center gap-2 md:gap-8">
               <div className="h-[672px] flex-1 flex justify-center items-center">
                 <img
                   className="md:w-2/3"
-                  src={data.product.image}
-                  alt={data.product.name}
+                  src={product.image}
+                  alt={product.name}
                 />
               </div>
               <div className="productDetail h-full flex-1 flex flex-col justify-center ml-8 md:ml-1 gap-3 md:gap-6">
                 <div className="title text-xl md:text-2xl lg:text-3xl font-semibold">
-                  {data.product.name}
+                  {product.name}
                 </div>
                 <div className="flex gap-5 text-2xl font-semibold">
                   <span className="price">
                     <span className="flex items-center">
                       <MdCurrencyRupee />
-                      <span>{data.product.price}</span>
+                      <span>{product.price}</span>
                     </span>
                   </span>
                   <span className="subPrice line-through text-gray-400">
                     <span className="flex items-center">
                       <MdCurrencyRupee />
                       <span>
-                        {(
-                          data.product.price +
-                          data.product.price * 1.4
-                        ).toFixed(0)}
+                        {(product.price + product.price * 1.4).toFixed(0)}
                       </span>
                     </span>
                   </span>
@@ -135,12 +179,12 @@ const Product = () => {
                   >
                     Add to Wishlist
                   </Link>
-                  <Link
-                    className="addToCart lg:w-1/2 px-3 h-10 bg-black rounded-sm text-white flex justify-center items-center transition-all hover:scale-105 active:scale-100"
-                    to={`/cart/${productId}`}
+                  <div
+                    className="addToCart cursor-pointer lg:w-1/2 px-3 h-10 bg-black rounded-sm text-white flex justify-center items-center transition-all hover:scale-105 active:scale-100"
+                    onClick={() => handleAddToCart(product)}
                   >
                     Add to Cart
-                  </Link>
+                  </div>
                 </div>
               </div>
             </div>

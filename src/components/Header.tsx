@@ -1,26 +1,50 @@
-import { useDispatch, useSelector } from "react-redux";
-import { NavLink } from "react-router-dom";
 import { Link, useNavigate } from "react-router-dom";
-import { AppDispatch, RootState } from "../store/Store";
 import { useEffect, useState } from "react";
-import { logout } from "../store/user/userSlice";
-import { userLogOut } from "../store/cart/cartSlice";
+import { useQueryClient } from "react-query";
+import { ICart, IUser } from "../types/types";
+import { getCartItems } from "../utilityFunctions/localStorageCRUD";
+import { useFetchUserCart, useProfile, useUserLogOut } from "../api/api";
+import { NavLink } from "react-router-dom";
 
 export const Header = () => {
   const navigate = useNavigate();
-  const { user, status } = useSelector((state: RootState) => state.user);
-  const { cartItemsLs } = useSelector((state: RootState) => state.cart);
+  const queryClient = useQueryClient();
+  const cachedUser: IUser | undefined = queryClient.getQueryData("user");
 
-  const dispatch = useDispatch<AppDispatch>();
+  useProfile();
+  const { refetch: refetchLogOut } = useUserLogOut();
+  const lsCart: ICart[] | [] = getCartItems("ecommerceCart");
+  const [user, setUser] = useState<IUser | undefined>(cachedUser);
+  const [cart, setCart] = useState<ICart[] | undefined>(undefined);
   const [show, setShow] = useState<{ cart: boolean; user: boolean }>({
     cart: false,
     user: false,
   });
+
+  const { refetch: refetchCart } = useFetchUserCart(user?._id);
+  const cachedCart: ICart[] | undefined = queryClient.getQueryData([
+    "cart",
+    user?._id,
+  ]);
+
   useEffect(() => {
-    if (status !== "success") {
-      dispatch(userLogOut());
+    setCart([...getCartItems("ecommerceCart"), ...(cachedCart || [])]);
+  }, [cachedCart, lsCart.length]);
+
+  useEffect(() => {
+    if (!user && cachedUser) {
+      setUser(cachedUser);
     }
-  }, [dispatch, status]);
+  }, [cachedUser, user]);
+  useEffect(() => {
+    if (user && (!cachedCart || cachedCart.length === 0)) {
+      refetchCart().then((res) => {
+        res.data?.response &&
+          setCart([...res.data.response, ...getCartItems("ecommerceCart")]);
+      });
+    }
+  }, [user, refetchCart, cachedCart]);
+
   useEffect(() => {
     const handleClick = () => {
       setShow(() => ({ user: false, cart: false }));
@@ -69,7 +93,7 @@ export const Header = () => {
             <NavLink to="/cart" className="relative myCart cursor-pointer">
               <img src="../../images/Cart.png" alt="Cart" />
               <span className="navCart absolute -top-3 -right-1.5 text-black-950 font-semibold">
-                {status === "success" ? cartItemsLs.length : ""}
+                {user ? cart?.length : ""}
               </span>
             </NavLink>
             <span className="relative">
@@ -78,17 +102,11 @@ export const Header = () => {
                   show.user ? "block" : "hidden"
                 } absolute w-16 md:w-20 md:border-2 shadow-xl md:shadow-2xl -right-[84px] md:-right-4 md:top-12  flex flex-col bg-white`}
               >
-                {status === "success" ? (
+                {user ? (
                   <span className="flex flex-col">
                     <span className="text-sm md:text:md hover:bg-slate-100 hover:font-semibold active:bg-slate-200  active:scale-95  px-1.5 py-1">
                       {user?.name?.toUpperCase()}
                     </span>
-                    {/* <Link
-                      className="text-sm md:text:md hover:bg-slate-100 hover:font-semibold active:bg-slate-200  active:scale-95  px-1.5 py-1"
-                      to="#"
-                    >
-                      Profile
-                    </Link> */}
                     <Link
                       onClick={() =>
                         setShow((prev) => ({ ...prev, user: !prev.user }))
@@ -100,8 +118,9 @@ export const Header = () => {
                     </Link>
                     <Link
                       onClick={() => {
-                        dispatch(logout());
+                        refetchLogOut();
                         setShow((prev) => ({ ...prev, user: !prev.user }));
+                        setUser(undefined);
                       }}
                       className="text-sm md:text:md hover:bg-slate-100 hover:font-semibold active:bg-slate-200  active:scale-95  px-1.5 py-1"
                       to="#"
