@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 
 import Product from "./pages/Product";
@@ -18,11 +18,12 @@ const App = () => {
   const queryClient = useQueryClient();
   const cachedUser = queryClient.getQueryData<IUser | undefined>("user");
   const { data: profileResponse, refetch } = useProfile();
+  const location = useLocation();
   useEffect(() => {
     if (!cachedUser && !profileResponse?.response) {
       refetch();
     }
-  }, [cachedUser, profileResponse?.response, refetch]);
+  }, [cachedUser, profileResponse?.response, refetch, location]);
   const user = cachedUser || profileResponse?.response;
   return (
     <Routes>

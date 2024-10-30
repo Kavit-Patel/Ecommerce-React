@@ -46,8 +46,12 @@ const CheckOut = () => {
   const { mutateAsync: deleteAddress, isLoading: isAddressDeleteLoading } =
     useDeleteAddress();
   const { refetch: refetchUserCart } = useFetchUserCart(user?._id);
-  const { mutateAsync: createNewOrder } = useNewOrder();
-  const { mutateAsync: createPaymentIntent } = useCreatePaymentIntent();
+  const { mutateAsync: createNewOrder, isLoading: isOrderGenerationLoading } =
+    useNewOrder();
+  const {
+    mutateAsync: createPaymentIntent,
+    isLoading: isPaymentCreationLoading,
+  } = useCreatePaymentIntent();
 
   const [cartItems, setCartItems] = useState<ICart[] | undefined>(undefined);
   const cartAdditionDone = useRef<boolean>(false);
@@ -387,7 +391,13 @@ const CheckOut = () => {
                 Back
               </Link>
               <div
-                className="addToCart w-1/2 cursor-pointer px-3 h-10 bg-black rounded-sm text-white flex justify-center items-center transition-all hover:scale-105 active:scale-100"
+                className={`addToCart w-1/2  px-3 h-10 rounded-sm text-white flex justify-center items-center ${
+                  isPaymentCreationLoading ||
+                  isOrderGenerationLoading ||
+                  !radioCheck
+                    ? "bg-gray-400 cursor-wait"
+                    : " cursor-pointer bg-black transition-all hover:scale-105 active:scale-100 "
+                }`}
                 onClick={() => radioCheck && handleNext(radioCheck)}
               >
                 Next

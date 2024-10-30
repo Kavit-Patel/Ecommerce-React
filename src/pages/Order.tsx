@@ -170,7 +170,9 @@ const Order = () => {
               </div>
             </div>
             <div className="p-4 mt-5 flex flex-col gap-4">
-              <h2 className="text-sm font-semibold">Payment</h2>
+              <h2 className="text-sm font-semibold">
+                Payment-use 4000 0035 6000 0123
+              </h2>
               <div className=" flex gap-4 text-xs">
                 <span
                   onClick={() =>

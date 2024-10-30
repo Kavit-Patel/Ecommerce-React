@@ -54,7 +54,7 @@ const PaymentForm = () => {
         orderId: cachedCurrentOrder?._id,
         payMode: "Credit Card",
       }).then(() => {
-        queryClient.invalidateQueries(["cart", cachedUser?._id]);
+        queryClient.removeQueries(["cart", cachedUser?._id]);
         queryClient.removeQueries(["address", cachedUser?._id]);
         queryClient.removeQueries(["cart", cachedUser?._id]);
         queryClient.removeQueries(["product", cachedUser?._id]);

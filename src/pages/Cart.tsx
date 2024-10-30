@@ -5,10 +5,10 @@ import {
   updateCartItem,
 } from "../utilityFunctions/localStorageCRUD";
 import { MdCurrencyRupee } from "react-icons/md";
-import { ICart, IUser } from "../types/types";
+import { ICart, IPayment, IUser } from "../types/types";
 import { useQueryClient } from "react-query";
 import { getOrderSummary } from "../utilityFunctions/getOrderSummary";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   useDecreaseQuantity,
   useFetchUserCart,
@@ -19,7 +19,12 @@ import {
 function Cart() {
   const queryClient = useQueryClient();
   const user: IUser | undefined = queryClient.getQueryData("user");
+  const paymentInit: IPayment | undefined = queryClient.getQueryData([
+    "paymentInit",
+    user?._id,
+  ]);
   const [cartModified] = useState<boolean>(false);
+  const location = useLocation();
   const [lsCart] = useState<ICart[] | []>(() => getCartItems("ecommerceCart"));
   const [cachedCart] = useState<ICart[] | undefined>(() =>
     queryClient.getQueryData(["cart", user?._id])
@@ -51,6 +56,11 @@ function Cart() {
       });
     }
   }, [cachedCart, refetchCart]);
+  useEffect(() => {
+    if (location.pathname === "/checkout" || paymentInit?._id) {
+      setCartItems([]);
+    }
+  }, [location.pathname, paymentInit?._id]);
   const [orderSummary, setOrderSummary] = useState<{
     subtotal: number;
     tax: number;

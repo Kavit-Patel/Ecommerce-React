@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "react-query";
 import { ICart, IUser } from "../types/types";
@@ -8,6 +8,7 @@ import { NavLink } from "react-router-dom";
 
 export const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const cachedUser: IUser | undefined = queryClient.getQueryData("user");
 
@@ -28,9 +29,15 @@ export const Header = () => {
   ]);
 
   useEffect(() => {
-    setCart([...getCartItems("ecommerceCart"), ...(cachedCart || [])]);
+    if (location.pathname !== "/chechout") {
+      setCart([...getCartItems("ecommerceCart"), ...(cachedCart || [])]);
+    }
   }, [cachedCart, lsCart.length]);
-
+  useEffect(() => {
+    if (location.pathname === "/order") {
+      setCart([]);
+    }
+  }, [location]);
   useEffect(() => {
     if (!user && cachedUser) {
       setUser(cachedUser);
@@ -117,8 +124,8 @@ export const Header = () => {
                       myOrders
                     </Link>
                     <Link
-                      onClick={() => {
-                        refetchLogOut();
+                      onClick={async () => {
+                        await refetchLogOut();
                         setShow((prev) => ({ ...prev, user: !prev.user }));
                         setUser(undefined);
                       }}

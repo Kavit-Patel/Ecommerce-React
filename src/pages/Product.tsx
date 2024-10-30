@@ -26,6 +26,14 @@ const Product = () => {
   ]);
   const { mutateAsync: incQuantMutate } = useIncreaseQuantity();
   useEffect(() => {
+    if (user) {
+      queryClient.removeQueries(["currentOrder", user?._id]);
+      queryClient.removeQueries(["cart", user?._id]);
+      queryClient.removeQueries(["paymentInit", user?._id]);
+      queryClient.removeQueries(["paymentSuccess", user?._id]);
+    }
+  }, [user]);
+  useEffect(() => {
     if (!product) {
       refetch();
     }

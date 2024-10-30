@@ -6,6 +6,7 @@ import { useQueryClient } from "react-query";
 import { productsPriceRange } from "../utilityFunctions/getProductPriceRange";
 import { IProduct } from "../types/types";
 import { useFetchProducts } from "../api/api";
+import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
 const Products = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -69,13 +70,13 @@ const Products = () => {
                     className="flex justify-between pl-1 relative price-line-hidden border-b pb-2 font-semibold"
                   >
                     <span>Price</span>
-                    <span
-                      className={`${
-                        visible.price
-                          ? " rotate-90 right-0 "
-                          : " -rotate-90 right-1 "
-                      }absolute`}
-                    >{`>`}</span>
+                    <span className={`text-lg`}>
+                      {visible.price ? (
+                        <RiArrowUpSLine />
+                      ) : (
+                        <RiArrowDownSLine />
+                      )}
+                    </span>
                   </div>
                   <div
                     className={`${
