@@ -69,7 +69,7 @@ function Cart() {
   } | null>(null);
   useEffect(() => {
     cartItems && setOrderSummary(getOrderSummary(cartItems));
-  }, [cartModified]);
+  }, [cartModified, cartItems]);
   const itemLsOperation = async (cartItem: ICart, operation: string) => {
     const checkLocalExists = lsCart.find(
       (lsItem) =>
@@ -174,7 +174,7 @@ function Cart() {
                         id="cartContainer"
                         className="overflow-y-auto h-[80%] flex flex-col gap-3"
                       >
-                        {cartItems.map((item) => (
+                        {cartItems?.map((item) => (
                           <div
                             key={item._id || item.product._id}
                             id="card"
@@ -182,7 +182,10 @@ function Cart() {
                           >
                             <img
                               className="w-14"
-                              src={item.product.image}
+                              src={
+                                item.product?.image ||
+                                "/d Iphone 14 pro 1-1.png"
+                              }
                               alt={item.product.name}
                             />
                             <div className="flex flex-col items-center lg:items-start gap-1">

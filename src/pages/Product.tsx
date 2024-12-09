@@ -100,7 +100,7 @@ const Product = () => {
   }
   return (
     <main className="w-full bg-[#DFDFDF] flex justify-center">
-      <div className="w-[375px] md:w-[800px] lg:w-[1000px] bg-[#f5f5f5]">
+      <div className="w-[375px] md:w-[800px] min-h-96 lg:w-[1000px] bg-[#f5f5f5]">
         {isProductLoading && <Loader />}
         {product && (
           <section>

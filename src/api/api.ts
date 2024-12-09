@@ -28,7 +28,7 @@ const errorMessage = (err: unknown) => {
   if (err instanceof AxiosError && err.response) {
     const message = err.response.data?.message;
     return message instanceof Array
-      ? err.response.data?.message.json(", ")
+      ? err.response.data?.message.join(", ")
       : message || "Something went wrong !";
   }
   if (err instanceof Error) {
@@ -97,7 +97,7 @@ export const useProfile = () => {
       refetchOnWindowFocus: false,
       onSuccess: (data) => {
         queryClient.setQueryData("user", data.response);
-        toast.success(data.message);
+        // toast.success(data.message);
       },
       onError: (err) => {
         toast.info(errorMessage(err));
@@ -117,7 +117,7 @@ export const useFetchProducts = () => {
       refetchOnWindowFocus: false,
       onSuccess: (data) => {
         queryClient.setQueryData("products", data.response);
-        toast.success(data.message);
+        // toast.success(data.message);
       },
       onError: (err) => {
         toast.error(errorMessage(err));
@@ -139,7 +139,7 @@ export const useFetchSingleProduct = (id: string | undefined) => {
       refetchOnWindowFocus: false,
       onSuccess: (data) => {
         queryClient.setQueryData(["product", id], data.response);
-        toast.success(data.message);
+        // toast.success(data.message);
       },
       onError: (err) => {
         toast.error(errorMessage(err));
@@ -169,7 +169,7 @@ export const useAddManyToCart = () => {
       onSuccess: (data, args) => {
         const { userId } = args;
         queryClient.setQueryData(["cart", userId], data.response);
-        toast.success(data.message);
+        // toast.success(data.message);
       },
       onError: (err) => {
         toast.error(errorMessage(err));
@@ -194,7 +194,7 @@ export const useFetchUserCart = (
         if (data.response) {
           queryClient.setQueryData(["cart", userId], data.response);
         }
-        toast.success(data.message);
+        // toast.success(data.message);
       },
       onError: (err) => {
         toast.error(errorMessage(err));
@@ -312,7 +312,7 @@ export const useFetchUserAdress = (userId: string | undefined) => {
           ["address", userId],
           data.response
         );
-        toast.success(data.message);
+        // toast.success(data.message);
       },
       onError: (err) => {
         toast.error(errorMessage(err));
@@ -344,7 +344,7 @@ export const useAddNewAddress = () => {
           ["address", userId],
           [...existingUserAddress, data.response]
         );
-        toast.success(data.message);
+        // toast.success(data.message);
       },
       onError: (err) => {
         toast.error(errorMessage(err));
@@ -416,7 +416,7 @@ export const useDeleteAddress = () => {
           cachedAddresses.splice(idxTobeDeleted);
         }
         queryClient.setQueryData(["address", userId], cachedAddresses);
-        toast.success(data.message);
+        // toast.success(data.message);
       },
       onError: (err) => {
         toast.error(errorMessage(err));
@@ -460,7 +460,7 @@ export const useNewOrder = () => {
             data.response.newOrderWithProductsDetail
           );
         }
-        toast.success(data.message);
+        // toast.success(data.message);
       },
       onError: (err) => {
         toast.error(errorMessage(err));
@@ -479,7 +479,7 @@ export const useFetchUserOrders = (userId: string | undefined) => {
       refetchOnWindowFocus: false,
       onSuccess: (data) => {
         queryClient.setQueryData(["allOrders", userId], data.response);
-        toast.success(data.message);
+        // toast.success(data.message);
       },
       onError: (err) => {
         toast.error(errorMessage(err));
@@ -519,7 +519,7 @@ export const useCreatePaymentIntent = () => {
       onSuccess: (data, args) => {
         const { userId } = args;
         queryClient.setQueryData(["paymentInit", userId], data.response);
-        toast.success(data.message);
+        // toast.success(data.message);
       },
       onError: (err) => {
         toast.error(errorMessage(err));
