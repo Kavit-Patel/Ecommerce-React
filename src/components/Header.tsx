@@ -1,56 +1,28 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "react-query";
-import { ICart, IUser } from "../types/types";
-import { getCartItems } from "../utilityFunctions/localStorageCRUD";
-import { useFetchUserCart, useProfile, useUserLogOut } from "../api/api";
+import { IUser } from "../types/types";
+import { useProfile, useUserLogOut } from "../api/api";
 import { NavLink } from "react-router-dom";
 
 export const Header = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const queryClient = useQueryClient();
   const cachedUser: IUser | undefined = queryClient.getQueryData("user");
 
   useProfile();
   const { refetch: refetchLogOut } = useUserLogOut();
-  const lsCart: ICart[] | [] = getCartItems("ecommerceCart");
   const [user, setUser] = useState<IUser | undefined>(cachedUser);
-  const [cart, setCart] = useState<ICart[] | undefined>(undefined);
   const [show, setShow] = useState<{ cart: boolean; user: boolean }>({
     cart: false,
     user: false,
   });
 
-  const { refetch: refetchCart } = useFetchUserCart(user?._id);
-  const cachedCart: ICart[] | undefined = queryClient.getQueryData([
-    "cart",
-    user?._id,
-  ]);
-
-  useEffect(() => {
-    if (location.pathname !== "/chechout") {
-      setCart([...getCartItems("ecommerceCart"), ...(cachedCart || [])]);
-    }
-  }, [cachedCart, lsCart.length]);
-  useEffect(() => {
-    if (location.pathname === "/order") {
-      setCart([]);
-    }
-  }, [location]);
   useEffect(() => {
     if (!user && cachedUser) {
       setUser(cachedUser);
     }
   }, [cachedUser, user]);
-  useEffect(() => {
-    if (user && (!cachedCart || cachedCart.length === 0)) {
-      refetchCart().then((res) => {
-        res.data?.response &&
-          setCart([...res.data.response, ...getCartItems("ecommerceCart")]);
-      });
-    }
-  }, [user, refetchCart, cachedCart]);
 
   useEffect(() => {
     const handleClick = () => {
@@ -100,7 +72,7 @@ export const Header = () => {
             <NavLink to="/cart" className="relative myCart cursor-pointer">
               <img src="../../images/Cart.png" alt="Cart" />
               <span className="navCart absolute -top-3 -right-1.5 text-black-950 font-semibold">
-                {user ? cart?.length : ""}
+                {user ? "" : ""}
               </span>
             </NavLink>
             <span className="relative">
@@ -190,7 +162,7 @@ export const Header = () => {
               src="../../images/Vector-36.png"
               alt="Phone"
             />
-            <span>Phone</span>
+            <span>Products</span>
           </Link>
           <Link to="#" className="flex items-center text-gray-400 gap-2">
             <img

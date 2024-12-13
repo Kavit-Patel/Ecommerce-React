@@ -157,13 +157,12 @@ export const useAddManyToCart = () => {
     AxiosError,
     { userId: string | undefined; items: ICart[] }
   >(
-    ({ userId, items }) => {
+    async ({ userId, items }) => {
       if (!userId) {
         throw new Error("User id is undefind, Login first !");
       }
-      return api
-        .post(`/api/syncCartWithLs/${userId}`, items)
-        .then((res) => res.data);
+      const res = await api.post(`/api/syncCartWithLs/${userId}`, items);
+      return res.data;
     },
     {
       onSuccess: (data, args) => {
@@ -184,8 +183,9 @@ export const useFetchUserCart = (
   const queryClient = useQueryClient();
   return useQuery<ICartResponseArr, AxiosError>(
     ["cartRes", userId],
-    () => {
-      return api.get(`/api/getUserCart/${userId}`).then((res) => res.data);
+    async () => {
+      const res = await api.get(`/api/getUserCart/${userId}`);
+      return res.data;
     },
     {
       enabled: !!userId && shouldFetch,
@@ -209,13 +209,12 @@ export const useIncreaseQuantity = () => {
     AxiosError,
     { userId: string | undefined; cartId: string | undefined }
   >(
-    ({ userId, cartId }) => {
+    async ({ userId, cartId }) => {
       if (!userId || !cartId) {
         throw new Error("User id or cart id is missing !");
       }
-      return api
-        .get(`/api/increaseQuantity/${userId}/${cartId}`)
-        .then((res) => res.data);
+      const res = await api.get(`/api/increaseQuantity/${userId}/${cartId}`);
+      return res.data;
     },
     {
       onSuccess: (data, args) => {
@@ -240,13 +239,12 @@ export const useDecreaseQuantity = () => {
     AxiosError,
     { userId: string | undefined; cartId: string | undefined }
   >(
-    ({ userId, cartId }) => {
+    async ({ userId, cartId }) => {
       if (!userId || !cartId) {
         throw new Error("User id or cart id is missing !");
       }
-      return api
-        .get(`/api/decreaseQuantity/${userId}/${cartId}`)
-        .then((res) => res.data);
+      const res = await api.get(`/api/decreaseQuantity/${userId}/${cartId}`);
+      return res.data;
     },
     {
       onSuccess: (data, args) => {
@@ -271,13 +269,12 @@ export const useRemoveCartItem = () => {
     AxiosError,
     { userId: string | undefined; cartId: string | undefined }
   >(
-    ({ userId, cartId }) => {
+    async ({ userId, cartId }) => {
       if (!userId || !cartId) {
         throw new Error("User id or cart id is missing !");
       }
-      return api
-        .get(`/api/removeItem/${userId}/${cartId}`)
-        .then((res) => res.data);
+      const res = await api.get(`/api/removeItem/${userId}/${cartId}`);
+      return res.data;
     },
     {
       onSuccess: (data, args) => {
@@ -327,13 +324,12 @@ export const useAddNewAddress = () => {
     AxiosError,
     { userId: string | undefined; data: IAddress }
   >(
-    ({ userId, data }) => {
+    async ({ userId, data }) => {
       if (!userId) {
         throw new Error("userId is undefinded, Please Login first");
       }
-      return api
-        .post(`api/addNewAddress/${userId}`, data)
-        .then((res) => res.data);
+      const res = await api.post(`api/addNewAddress/${userId}`, data);
+      return res.data;
     },
     {
       onSuccess: (data, args) => {
@@ -359,13 +355,12 @@ export const useUpdateUserAddress = () => {
     AxiosError,
     { userId: string | undefined; data: IAddress }
   >(
-    ({ userId, data }) => {
+    async ({ userId, data }) => {
       if (!userId) {
         throw new Error("User Id is undefind, Login first !");
       }
-      return api
-        .put(`/api/updateUserAddress/${userId}`, data)
-        .then((res) => res.data);
+      const res = await api.put(`/api/updateUserAddress/${userId}`, data);
+      return res.data;
     },
     {
       onSuccess: (data, args) => {
@@ -393,16 +388,17 @@ export const useDeleteAddress = () => {
     AxiosError,
     { userId: string | undefined; addressId: string }
   >(
-    ({ userId, addressId }) => {
+    async ({ userId, addressId }) => {
       if (!userId) {
         throw new Error("User Id is undefind, Login first !");
       }
       if (!addressId) {
         throw new Error("address Id is undefind / not provided !");
       }
-      return api
-        .delete(`api/deleteUserAddress/${userId}/${addressId}`)
-        .then((res) => res.data);
+      const res = await api.delete(
+        `api/deleteUserAddress/${userId}/${addressId}`
+      );
+      return res.data;
     },
     {
       onSuccess: (data, args) => {
@@ -437,7 +433,7 @@ export const useNewOrder = () => {
       orderDetail: IOrder | undefined;
     }
   >(
-    ({ userId, cartIdArr, orderDetail }) => {
+    async ({ userId, cartIdArr, orderDetail }) => {
       if (!userId) {
         throw new Error("User id is undefined, Login first !");
       }
@@ -447,9 +443,11 @@ export const useNewOrder = () => {
       if (!orderDetail) {
         throw new Error("provide order details");
       }
-      return api
-        .post(`/api/addNewOrder/${userId}`, { cartIdArr, ...orderDetail })
-        .then((res) => res.data);
+      const res = await api.post(`/api/addNewOrder/${userId}`, {
+        cartIdArr,
+        ...orderDetail,
+      });
+      return res.data;
     },
     {
       onSuccess: (data, args) => {
@@ -500,7 +498,7 @@ export const useCreatePaymentIntent = () => {
       amount: number | undefined;
     }
   >(
-    ({ userId, orderId, amount }) => {
+    async ({ userId, orderId, amount }) => {
       if (!userId) {
         throw new Error("User id is undefind ,Login first !");
       }
@@ -511,9 +509,11 @@ export const useCreatePaymentIntent = () => {
         throw new Error("Provide amount to generate payment intent !");
       }
 
-      return api
-        .post(`/api/createPaymentIntent/${userId}/${orderId}`, { amount })
-        .then((res) => res.data);
+      const res = await api.post(
+        `/api/createPaymentIntent/${userId}/${orderId}`,
+        { amount }
+      );
+      return res.data;
     },
     {
       onSuccess: (data, args) => {
@@ -539,18 +539,20 @@ export const usePaymentSuccessed = () => {
       payMode: string | undefined;
     }
   >(
-    ({ userId, paymentId, orderId, payMode }) => {
+    async ({ userId, paymentId, orderId, payMode }) => {
       if (!userId || !paymentId || !orderId || !payMode) {
         throw new Error(
           "Provide all details userId,paymentId,orderId and payMode"
         );
       }
-      return api
-        .post(`/api/paymentSuccessed/${userId}/${paymentId}`, {
+      const res = await api.post(
+        `/api/paymentSuccessed/${userId}/${paymentId}`,
+        {
           payMode,
           orderId,
-        })
-        .then((res) => res.data);
+        }
+      );
+      return res.data;
     },
     {
       onSuccess: (data, args) => {
